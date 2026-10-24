@@ -167,7 +167,7 @@ El `body` de cada sección usa markdown mínimo: `**bold**`, `*italic*`, `### su
 - Servidor: **funcional en localhost:3000 y expuesto públicamente vía Cloudflare Tunnel**
 - Repositorio: **versionado en Git y sincronizado en GitHub (`https://github.com/canija2000/jyotish-reports`)**
 - Verificación PayPal: **backend valida status 'COMPLETED' con API REST v2 de PayPal**
-- PayPal: **sandbox (`client-id=sb`), pendiente reemplazar por Client ID de producción de joaquin.bachler@gmail.com**
+- PayPal: **Producción activa con Client ID real en front y `.env`**
 
 ## URLs activas
 - **Pública (HTTPS):** `https://mineral-solaris-curriculum-gathered.trycloudflare.com/`
