@@ -163,8 +163,15 @@ El `body` de cada sección usa markdown mínimo: `**bold**`, `*italic*`, `### su
 - Reporte: **refactorizado a estructura, sin emojis, copy sobrio**
 - PDF: **rediseñado estilo editorial (EB Garamond, óxido, filetes)**
 - Landing: **v2 editorial, precio 1.99 USD, con preview de muestra (Paul Erdős)**
-- Servidor: **funcional en localhost:3000**
-- PayPal: **sandbox (client-id=sb), sin credenciales de producción**
+- Geocodificación: **automática (presets de ciudades de Iberoamérica + fallback OSM Nominatim)**
+- Servidor: **funcional en localhost:3000 y expuesto públicamente vía Cloudflare Tunnel**
+- Repositorio: **versionado en Git y sincronizado en GitHub (`https://github.com/canija2000/jyotish-reports`)**
+- Verificación PayPal: **backend valida status 'COMPLETED' con API REST v2 de PayPal**
+- PayPal: **sandbox (`client-id=sb`), pendiente reemplazar por Client ID de producción de joaquin.bachler@gmail.com**
+
+## URLs activas
+- **Pública (HTTPS):** `https://mineral-solaris-curriculum-gathered.trycloudflare.com/`
+- **GitHub:** `https://github.com/canija2000/jyotish-reports`
 
 ## Pendiente / mejoras futuras
 
