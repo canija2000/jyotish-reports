@@ -3,7 +3,7 @@
 Generador de informes personalizados de astrología védica (Jyotish) en PDF, calculados con efemérides astronómicas reales (zodíaco sidéreo, ayanamsa Lahiri, casas Whole Sign) y compuestos con diseño tipográfico editorial sobrio.
 
 **Aplicación en vivo:** [https://mineral-solaris-curriculum-gathered.trycloudflare.com/](https://mineral-solaris-curriculum-gathered.trycloudflare.com/)  
-**Informe de ejemplo completo (PDF de 8 páginas):** [Descargar muestra de Paul Erdős](https://mineral-solaris-curriculum-gathered.trycloudflare.com/muestra_erdos.pdf)
+**Informe de ejemplo completo (PDF de 12 páginas):** [Descargar muestra de Paul Erdős](https://mineral-solaris-curriculum-gathered.trycloudflare.com/muestra_erdos.pdf)
 
 ---
 
@@ -11,7 +11,7 @@ Generador de informes personalizados de astrología védica (Jyotish) en PDF, ca
 
 A diferencia de las aplicaciones astrológicas genéricas que utilizan fórmulas prefabricadas o posiciones solares tropicales (occidentales), Jyotish Reports calcula el mapa celeste sidéreo exacto en el momento del nacimiento utilizando `astronomy-engine`.
 
-Cada informe genera un PDF editorial de unas ocho páginas compuesto en tipografía **EB Garamond**, con tablas de posiciones sidéreas, nakshatras con pada, división Navamsha (D-9), balance elemental, secuencia de periodos Vimshottari Dasha y una síntesis kármica integrada.
+Cada informe genera un PDF editorial de unas doce páginas compuesto en tipografía **Source Serif 4**, con tablas de posiciones sidéreas, nakshatras con pada, división Navamsha (D-9), balance elemental, secuencia de periodos Vimshottari Dasha y una síntesis kármica integrada.
 
 Se entrega de forma inmediata por **$1.99 USD** procesado vía PayPal.
 

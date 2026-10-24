@@ -62,10 +62,11 @@ const sample = {
   })),
   // Copy curado: deriva de las posiciones calculadas arriba. Si cambian los
   // datos de nacimiento usados, este texto hay que reescribirlo a mano.
+  // Con Cáncer ascendente: Sol, Mercurio y Rahu en la casa 9; Júpiter (regente de la 9) en la 6.
   excerpt: [
-    'Sol y Mercurio en Piscis, y Júpiter en su propio signo, Sagitario, en la casa de las redes y los deseos cumplidos: la carta de un conector. Erdős fue el matemático más prolífico y colaborativo de la historia — unos 1.500 artículos con más de 500 coautores — y la matemática todavía mide esa cualidad con el “número de Erdős”.',
+    'Sol, Mercurio y Rahu en Piscis, reunidos en la casa 9: la del conocimiento superior y la búsqueda de sentido. Es la casa más poblada de su carta, y Erdős le dedicó la vida entera. Fue el matemático más prolífico y colaborativo de la historia — unos 1.500 artículos con más de 500 coautores — y la matemática todavía mide esa cualidad con el “número de Erdős”.',
     'No hay un solo planeta en signos de tierra en su carta. Vivió exactamente así: sin casa, sin empleo fijo ni pertenencias, viajando de universidad en universidad con media maleta, instalándose donde hubiera un problema abierto y alguien dispuesto a trabajarlo con él.',
-    'La Luna en Anuradha, la nakshatra de la amistad y la cooperación, rige su sistema de periodos: una mente emocional hecha para el trabajo en común.'
+    'Júpiter, regente de esa casa 9, está en su propio signo, Sagitario, y ocupa la casa del trabajo diario: el propósito se cumple trabajando. Erdős encadenaba jornadas de hasta diecinueve horas. Y la Luna en Anuradha, la nakshatra de la amistad y la cooperación, rige su sistema de periodos: una mente emocional hecha para el trabajo en común.'
   ],
   fineprint: 'La hora de nacimiento de Erdős no está documentada; la carta se calculó al mediodía local (UTC+1), la convención habitual en esos casos. El ascendente y las casas son, por tanto, aproximados. Además la Luna entró en Escorpio esa misma madrugada, así que su signo lunar tiene un margen de duda: lo seguro son el Sol en Piscis, Júpiter en Sagitario y la ausencia de tierra.'
 };
