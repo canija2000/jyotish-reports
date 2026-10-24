@@ -168,9 +168,13 @@ El `body` de cada sección usa markdown mínimo: `**bold**`, `*italic*`, `### su
 - Repositorio: **versionado en Git y sincronizado en GitHub (`https://github.com/canija2000/jyotish-reports`)**
 - Verificación PayPal: **backend valida status 'COMPLETED' con API REST v2 de PayPal**
 - PayPal: **Producción activa con Client ID real en front y `.env`**
+- Despliegue en la nube: **Dockerfile con Chromium headless + render.yaml para 1-click cloud deploy**
+- PDF de muestra: **`public/muestra_erdos.pdf` generado y descargable en vivo**
+- Distribución: **plan de contenidos y copies listos en `DISTRIBUCION.md`**
 
 ## URLs activas
 - **Pública (HTTPS):** `https://mineral-solaris-curriculum-gathered.trycloudflare.com/`
+- **PDF de muestra público:** `https://mineral-solaris-curriculum-gathered.trycloudflare.com/muestra_erdos.pdf`
 - **GitHub:** `https://github.com/canija2000/jyotish-reports`
 
 ## Pendiente / mejoras futuras
