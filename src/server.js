@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const { calculateChart } = require('./calculator');
 const { generateReport } = require('./report');
-const { generatePDF } = require('./pdf');
+const { generatePDF } = require('./pdf-web');
 
 const app = express();
 const PORT = process.env.PORT || 3000;

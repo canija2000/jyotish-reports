@@ -4,10 +4,12 @@
  * Copy sobrio, riguroso y sin emojis: un documento editorial de autoconocimiento.
  */
 
+const { SIGNS, SIGN_LORDS: SIGN_LORD_KEYS } = require('./calculator');
+
 // ========== DICCIONARIOS Y TRADUCCIONES ==========
 
 const SIGNS_EN = [
-  'Aries', 'Tauro', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
   'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
 ];
 
@@ -189,6 +191,65 @@ const NAKSHATRA_INTERPS = {
   }
 };
 
+// Dignidad por signo: etiqueta corta (tablas) y frase para el texto
+const DIGNITY = {
+  es: {
+    exalted: { label: 'Exaltado', text: 'está exaltado: es el signo donde mejor se expresa, con fuerza y claridad' },
+    moolatrikona: { label: 'Mūlatrikoṇa', text: 'está en su mūlatrikoṇa, un signo de gran afinidad donde actúa con autoridad y coherencia' },
+    own: { label: 'Signo propio', text: 'está en su propio signo: actúa con autonomía y con recursos propios' },
+    friend: { label: 'Signo amigo', text: 'está en un signo amigo, donde encuentra apoyo para expresarse' },
+    neutral: { label: 'Neutral', text: 'está en un signo neutral: su resultado depende sobre todo de la casa que ocupa y de las que rige' },
+    enemy: { label: 'Signo enemigo', text: 'está en un signo enemigo: necesita más esfuerzo para dar sus frutos' },
+    debilitated: { label: 'En caída', text: 'está en caída: sus temas piden trabajo consciente y suelen madurar con el tiempo' }
+  },
+  en: {
+    exalted: { label: 'Exalted', text: 'is exalted: this is the sign where it expresses itself with the most strength and clarity' },
+    moolatrikona: { label: 'Mūlatrikoṇa', text: 'is in its mūlatrikoṇa, a sign of deep affinity where it acts with authority and coherence' },
+    own: { label: 'Own sign', text: 'is in its own sign: it acts autonomously and with its own resources' },
+    friend: { label: 'Friendly sign', text: 'is in a friendly sign, where it finds support to express itself' },
+    neutral: { label: 'Neutral', text: 'is in a neutral sign: its results depend mostly on the house it occupies and the houses it rules' },
+    enemy: { label: 'Enemy sign', text: 'is in an enemy sign: it needs more effort to bear fruit' },
+    debilitated: { label: 'Debilitated', text: 'is debilitated: its themes call for conscious work and tend to mature over time' }
+  }
+};
+const STRONG = ['exalted', 'moolatrikona', 'own'];
+
+// Nombre breve de cada casa, para frases que enumeran varias
+const HOUSE_SHORT = {
+  es: { 1: 'identidad', 2: 'recursos', 3: 'comunicación', 4: 'hogar', 5: 'creatividad', 6: 'trabajo y salud', 7: 'pareja', 8: 'transformación', 9: 'dharma', 10: 'carrera', 11: 'ganancias y redes', 12: 'vida interior' },
+  en: { 1: 'self', 2: 'resources', 3: 'communication', 4: 'home', 5: 'creativity', 6: 'work and health', 7: 'partnership', 8: 'transformation', 9: 'dharma', 10: 'career', 11: 'gains and networks', 12: 'inner life' }
+};
+
+const ELEMENT_NAMES = {
+  es: { fire: 'Fuego', earth: 'Tierra', air: 'Aire', water: 'Agua' },
+  en: { fire: 'Fire', earth: 'Earth', air: 'Air', water: 'Water' }
+};
+
+const DASHA_KEY = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke' };
+
+// ---------- utilidades de texto ----------
+
+function pName(key, l) { return PLANET_NAMES[l][key]; }
+// Con artículo cuando el castellano lo pide (el Sol, la Luna); cap = mayúscula inicial
+function pArt(key, l, cap) {
+  const art = l === 'es' ? { Su: 'el ', Mo: 'la ' }[key] || '' : (key === 'Su' || key === 'Mo' ? 'the ' : '');
+  const s = art + pName(key, l);
+  return cap ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+function sName(idx, l) { return l === 'en' ? SIGNS_EN[idx] : SIGNS[idx]; }
+function houseWord(l) { return l === 'en' ? 'House' : 'Casa'; }
+function joinList(items, l) {
+  if (items.length <= 1) return items.join('');
+  const and = l === 'en' ? ' and ' : ' y ';
+  return items.slice(0, -1).join(', ') + and + items[items.length - 1];
+}
+function dashaLordName(lord, l) { return pName(DASHA_KEY[lord], l); }
+function rulesPhrase(rules, l) {
+  return joinList(rules.map(h => `${h} (${HOUSE_SHORT[l][h]})`), l);
+}
+function capFirst(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function yearSpan(a, b) { return `${a.getFullYear()}–${b.getFullYear()}`; }
+
 // ========== GENERADOR PRINCIPAL ==========
 
 function generateReport(chart, lang = 'es') {
@@ -196,15 +257,101 @@ function generateReport(chart, lang = 'es') {
   return {
     lang: l,
     cover: buildCover(chart, l),
+    summary: buildSummaryCards(chart, l),
+    labels: {
+      dignity: Object.fromEntries(Object.entries(DIGNITY[l]).map(([k, v]) => [k, v.label])),
+      houseShort: HOUSE_SHORT[l]
+    },
     sections: [
+      buildSummarySection(chart, l),
       buildTechnicalData(chart, l),
       buildAscendantSection(chart, l),
       buildPlanetsSection(chart, l),
       buildNakshatraSection(chart, l),
       buildHousesSection(chart, l),
       buildDashaSection(chart, l),
-      buildSynthesis(chart, l)
+      buildSynthesis(chart, l),
+      buildGlossary(chart, l)
     ]
+  };
+}
+
+// ---------- 0 · Tu carta en una página ----------
+
+function strongPlanets(chart) {
+  return ['Su', 'Mo', 'Ma', 'Me', 'Ju', 'Ve', 'Sa'].filter(k => STRONG.includes(chart.planets[k].dignity));
+}
+function weakPlanets(chart) {
+  return ['Su', 'Mo', 'Ma', 'Me', 'Ju', 'Ve', 'Sa'].filter(k => chart.planets[k].dignity === 'debilitated');
+}
+function dominantHouses(chart) {
+  const max = Math.max(...chart.houseTable.map(h => h.occupants.length));
+  return { max, houses: chart.houseTable.filter(h => h.occupants.length === max).map(h => h.house) };
+}
+function elementBalance(chart) {
+  const e = Object.entries(chart.elements).sort((a, b) => b[1] - a[1]);
+  return { dominant: e[0][0], count: e[0][1], missing: e.filter(([, n]) => n === 0).map(([k]) => k) };
+}
+
+function buildSummaryCards(chart, l) {
+  const isEn = l === 'en';
+  const P = chart.planets;
+  const D = DIGNITY[l];
+  const asc = chart.ascendant;
+  const ruler = P[SIGN_LORD_KEYS[asc.signIndex]];
+  const rulerKey = SIGN_LORD_KEYS[asc.signIndex];
+  const el = elementBalance(chart);
+  const dom = dominantHouses(chart);
+  const md = chart.currentDasha, ad = chart.currentAntardasha;
+  const strong = strongPlanets(chart), weak = weakPlanets(chart);
+  const none = isEn ? 'None' : 'Ninguno';
+
+  return [
+    { label: isEn ? 'Ascendant' : 'Ascendente', value: sName(asc.signIndex, l), note: `Lagna · ${asc.nakshatra}` },
+    { label: isEn ? 'Moon' : 'Luna', value: sName(P.Mo.signIndex, l), note: `Janma nakshatra · ${P.Mo.nakshatra}` },
+    { label: isEn ? 'Sun' : 'Sol', value: sName(P.Su.signIndex, l), note: `${houseWord(l)} ${P.Su.house} · ${D[P.Su.dignity].label}` },
+    { label: isEn ? 'Chart ruler' : 'Regente de la carta', value: pName(rulerKey, l), note: `${sName(ruler.signIndex, l)} · ${houseWord(l)} ${ruler.house} · ${D[ruler.dignity].label}` },
+    {
+      label: isEn ? 'Dominant element' : 'Elemento dominante',
+      value: ELEMENT_NAMES[l][el.dominant],
+      note: el.missing.length
+        ? `${el.count} ${isEn ? 'of' : 'de'} 7 · ${isEn ? 'no' : 'sin'} ${joinList(el.missing.map(k => ELEMENT_NAMES[l][k]), l)}`
+        : `${el.count} ${isEn ? 'of 7 grahas' : 'de 7 grahas'}`
+    },
+    {
+      label: isEn ? 'Busiest house' : 'Casa más poblada',
+      value: dom.houses.map(h => `${houseWord(l)} ${h}`).join(' · '),
+      note: `${joinList(dom.houses.map(h => HOUSE_SHORT[l][h]), l)} · ${dom.max} ${isEn ? 'planets' : 'planetas'}`
+    },
+    {
+      label: isEn ? 'Current period' : 'Periodo actual',
+      value: ad ? `${dashaLordName(md.lord, l)} · ${dashaLordName(ad.lord, l)}` : dashaLordName(md.lord, l),
+      note: ad
+        ? `${isEn ? 'sub-period until' : 'subperiodo hasta'} ${ad.end.getFullYear()} · ${isEn ? 'major until' : 'mayor hasta'} ${md.end.getFullYear()}`
+        : yearSpan(md.start, md.end)
+    },
+    { label: isEn ? 'Strengths' : 'Fortalezas', value: strong.length ? strong.map(k => pName(k, l)).join(' · ') : none, note: strong.length ? (isEn ? 'exalted, mūlatrikoṇa or own sign' : 'exaltados, en mūlatrikoṇa o en signo propio') : (isEn ? 'strength is evenly spread' : 'la fuerza está repartida') },
+    { label: isEn ? 'Growth points' : 'Puntos de trabajo', value: weak.length ? weak.map(k => pName(k, l)).join(' · ') : none, note: weak.length ? (isEn ? 'debilitated grahas' : 'grahas en caída') : (isEn ? 'no debilitated grahas' : 'ningún graha en caída') }
+  ];
+}
+
+function buildSummarySection(chart, l) {
+  const isEn = l === 'en';
+  return {
+    title: isEn ? 'Your Chart at a Glance' : 'Tu carta en una página',
+    body: [
+      isEn
+        ? 'The essentials of your chart before the detail. Each point is developed in the sections that follow.'
+        : 'Lo esencial de tu carta antes del detalle. Cada punto se desarrolla en las secciones que siguen.',
+      '',
+      '{{SUMMARY}}',
+      '',
+      `### ${isEn ? 'Elemental Balance' : 'Balance elemental'}`,
+      '',
+      '{{ELEMENTS}}',
+      '',
+      getElementsInterpretation(chart.elements, l)
+    ].join('\n')
   };
 }
 
@@ -216,9 +363,9 @@ function buildCover(chart, l) {
     meta: [
       { label: isEn ? 'Date of birth' : 'Fecha de nacimiento', value: chart.subject.birthDate },
       { label: isEn ? 'Time' : 'Hora', value: chart.subject.birthTime },
-      { label: isEn ? 'Place' : 'Lugar', value: chart.subject.place || '—' },
+      { label: isEn ? 'Place' : 'Lugar', value: chart.subject.place },
       { label: isEn ? 'Coordinates' : 'Coordenadas', value: chart.subject.coords }
-    ],
+    ].filter(m => m.value),
     epigraph: isEn
       ? 'Jyotish, the sacred science of light, illuminates the soul’s journey through the canvas of time.'
       : 'El jyotish, la ciencia sagrada de la luz, ilumina el camino del alma a través del tiempo.',
@@ -234,23 +381,11 @@ function buildCover(chart, l) {
 
 function buildTechnicalData(chart, l) {
   const isEn = l === 'en';
-  const el = chart.elements;
-  const elLine = isEn
-    ? `Fire ${el.fire} · Earth ${el.earth} · Air ${el.air} · Water ${el.water}`
-    : `Fuego ${el.fire} · Tierra ${el.earth} · Aire ${el.air} · Agua ${el.water}`;
 
   return {
     title: isEn ? 'Chart Technical Data' : 'Datos de la carta',
     body: [
-      `**${isEn ? 'Zodiac system' : 'Sistema'}:** ${chart.subject.zodiac}`,
-      `**Ayanamsa:** ${chart.subject.ayanamsa}`,
-      `**${isEn ? 'House system' : 'Casas'}:** ${chart.subject.houseSystem}`,
-      '',
-      `### ${isEn ? 'Elemental Balance' : 'Balance elemental'}`,
-      '',
-      elLine,
-      '',
-      getElementsInterpretation(chart.elements, l)
+      '{{CHARTS}}'
     ].join('\n')
   };
 }
@@ -281,8 +416,7 @@ function buildAscendantSection(chart, l) {
   const isEn = l === 'en';
   const asc = chart.ascendant;
   const s = SIGN_INTERPS[l][asc.signIndex];
-  const rulerKey = getRulerKey(s.ruler);
-  const rulerPlanet = chart.planets[rulerKey];
+  const rulerPlanet = chart.planets[SIGN_LORD_KEYS[asc.signIndex]];
   const signName = isEn ? SIGNS_EN[asc.signIndex] : asc.sign;
 
   return {
@@ -304,51 +438,85 @@ function buildAscendantSection(chart, l) {
       '',
       `**${isEn ? 'Element' : 'Elemento'}:** ${s.element} · **${isEn ? 'Modality' : 'Modalidad'}:** ${s.modality} · **${isEn ? 'Ruler' : 'Regente'}:** ${s.ruler}`,
       '',
+      `### ${isEn ? 'Your Chart Ruler' : 'El regente de tu carta'}`,
+      '',
+      `**${isEn ? 'Sign' : 'Signo'}:** ${sName(rulerPlanet.signIndex, l)} · **${houseWord(l)}:** ${rulerPlanet.house} · **${isEn ? 'Dignity' : 'Dignidad'}:** ${DIGNITY[l][rulerPlanet.dignity].label}${rulerPlanet.retrograde ? ` · **${isEn ? 'Motion' : 'Movimiento'}:** ${isEn ? 'retrograde' : 'retrógrado'}` : ''}`,
+      '',
       isEn
-        ? `As a ${signName} rising, your chart ruler is ${s.ruler}, positioned in House ${rulerPlanet?.house || '?'} (${isEn ? SIGNS_EN[rulerPlanet?.signIndex] : rulerPlanet?.sign}). This house marks a key focal point of your life's vitality and creative focus.`
-        : `Como ${asc.sign} ascendente, tu regente es ${s.ruler}, que en tu carta se halla en la Casa ${rulerPlanet?.house || '?'} y en el signo ${rulerPlanet?.sign || '?'}. Esa posición del regente señala el área de vida donde se concentra buena parte de tu energía.`
+        ? `The ruler of the Ascendant is the thread that runs through the whole chart. Yours is ${s.ruler}, placed in House ${rulerPlanet.house}, the domain of ${HOUSE_MEANINGS[l][rulerPlanet.house]}: that is where a large part of your energy naturally flows. In ${SIGNS_EN[rulerPlanet.signIndex]} it ${DIGNITY[l][rulerPlanet.dignity].text}.`
+        : `El regente del Ascendente es el hilo que atraviesa toda la carta. El tuyo es ${s.ruler}, situado en la Casa ${rulerPlanet.house}, el ámbito de ${HOUSE_MEANINGS[l][rulerPlanet.house]}: hacia ahí fluye de forma natural buena parte de tu energía. En ${rulerPlanet.sign} ${DIGNITY[l][rulerPlanet.dignity].text}.`
     ].join('\n')
   };
 }
 
-function getRulerKey(ruler) {
-  const map = {
-    'Sol': 'Su', 'Luna': 'Mo', 'Marte': 'Ma', 'Mercurio': 'Me', 'Júpiter': 'Ju', 'Venus': 'Ve', 'Saturno': 'Sa',
-    'Sun': 'Su', 'Moon': 'Mo', 'Mars': 'Ma', 'Mercury': 'Me', 'Jupiter': 'Ju', 'Saturn': 'Sa'
-  };
-  return map[ruler] || 'Su';
+// Párrafo de un graha: significado, signo y dignidad, casa, regencias y movimiento.
+// Cada frase depende de un dato distinto, así que dos planetas no producen el mismo texto.
+function planetParagraph(key, p, chart, l) {
+  const isEn = l === 'en';
+  const s = SIGN_INTERPS[l][p.signIndex];
+  const name = pName(key, l);
+  const sign = sName(p.signIndex, l);
+  const parts = [];
+
+  parts.push(isEn
+    ? `${pArt(key, l, true)} signifies ${PLANET_SIGNIFICATIONS[l][key]}.`
+    : `${pArt(key, l, true)} representa ${PLANET_SIGNIFICATIONS[l][key]}.`);
+
+  if (p.dignity) {
+    parts.push(isEn
+      ? `In ${sign} (${s.keywords}) it ${DIGNITY[l][p.dignity].text}.`
+      : `En ${sign} (${s.keywords}) ${DIGNITY[l][p.dignity].text}.`);
+  } else {
+    // Rahu y Ketu actúan a través del regente del signo que ocupan
+    const disp = SIGN_LORD_KEYS[p.signIndex];
+    const dp = chart.planets[disp];
+    parts.push(isEn
+      ? `As a shadow graha, it acts through the lord of its sign: in ${sign} (${s.keywords}), its results depend on ${pName(disp, l)}, placed in House ${dp.house}.`
+      : `Como graha de sombra, actúa a través del regente de su signo: en ${sign} (${s.keywords}), sus resultados dependen de ${pName(disp, l)}, que está en la Casa ${dp.house}.`);
+  }
+
+  parts.push(isEn
+    ? `In House ${p.house}, its energy is expressed above all through ${HOUSE_MEANINGS[l][p.house]}.`
+    : `En la Casa ${p.house}, su energía se expresa sobre todo en ${HOUSE_MEANINGS[l][p.house]}.`);
+
+  const others = p.rules.filter(h => h !== p.house);
+  if (p.rules.length && others.length) {
+    parts.push(isEn
+      ? `As lord of ${p.rules.length > 1 ? 'Houses' : 'House'} ${rulesPhrase(p.rules, l)}, it links those matters with House ${p.house}.`
+      : `Como regente de ${p.rules.length > 1 ? 'las casas' : 'la Casa'} ${rulesPhrase(p.rules, l)}, conecta esos temas con la Casa ${p.house}.`);
+  } else if (p.rules.length) {
+    parts.push(isEn
+      ? `It occupies a house it rules itself, which reinforces the matters of House ${p.house}.`
+      : `Ocupa una casa que él mismo rige, lo que refuerza los temas de la Casa ${p.house}.`);
+  }
+
+  if (p.retrograde && key !== 'Ra' && key !== 'Ke') {
+    parts.push(isEn
+      ? 'It was retrograde at your birth: its energy turns more reflective and inward, and its themes tend to be revisited and deepened over time.'
+      : 'Estaba retrógrado al nacer: su energía se vuelve más reflexiva e interior, y sus temas tienden a revisarse y profundizarse con el tiempo.');
+  }
+  return parts.join(' ');
 }
 
 function buildPlanetsSection(chart, l) {
   const isEn = l === 'en';
-  const blocks = Object.entries(chart.planets)
-    .filter(([key]) => key !== 'Asc')
-    .map(([key, p]) => {
-      const s = SIGN_INTERPS[l][p.signIndex];
-      const pName = PLANET_NAMES[l][key] || p.name;
-      const sName = isEn ? SIGNS_EN[p.signIndex] : p.sign;
-      const sig = PLANET_SIGNIFICATIONS[l][key] || 'planetary energy';
-      const houseMeaning = HOUSE_MEANINGS[l][p.house] || '';
-
-      if (isEn) {
-        return [
-          `### ${pName} in ${sName} (House ${p.house})`,
-          '',
-          `**Degree:** ${p.degreeFormatted} · **Nakshatra:** ${p.nakshatra} pada ${p.pada} · **Navamsha (D-9):** ${SIGNS_EN[p.navamshaIndex] || p.navamsha}`,
-          '',
-          `In the Vedic system, ${pName} signifies ${sig}. In ${sName} (${s.keywords}) and House ${p.house}, this archetype expresses predominantly through ${houseMeaning}.`
-        ].join('\n');
-      } else {
-        return [
-          `### ${p.name} en ${p.sign} (Casa ${p.house})`,
-          '',
-          `**Grado:** ${p.degreeFormatted} · **Nakshatra:** ${p.nakshatra} pada ${p.pada} · **Navamsha (D-9):** ${p.navamsha}`,
-          '',
-          `En el sistema védico, ${p.name} representa ${sig}. Su posición en ${p.sign} (${s.keywords}) y en la Casa ${p.house} indica que esta energía se expresa sobre todo en ${houseMeaning}.`
-        ].join('\n');
-      }
-    })
-    .join('\n\n');
+  const blocks = ['Su', 'Mo', 'Ma', 'Me', 'Ju', 'Ve', 'Sa', 'Ra', 'Ke'].map(key => {
+    const p = chart.planets[key];
+    const data = [
+      `**${isEn ? 'Degree' : 'Grado'}:** ${p.degreeFormatted}`,
+      `**Nakshatra:** ${p.nakshatra} pada ${p.pada}`,
+      `**Navamsha (D-9):** ${sName(p.navamshaIndex, l)}`
+    ];
+    if (p.dignity) data.push(`**${isEn ? 'Dignity' : 'Dignidad'}:** ${DIGNITY[l][p.dignity].label}`);
+    if (p.retrograde && key !== 'Ra' && key !== 'Ke') data.push(`**${isEn ? 'Motion' : 'Movimiento'}:** ${isEn ? 'retrograde' : 'retrógrado'}`);
+    return [
+      `### ${pName(key, l)} ${isEn ? 'in' : 'en'} ${sName(p.signIndex, l)} (${houseWord(l)} ${p.house})`,
+      '',
+      data.join(' · '),
+      '',
+      planetParagraph(key, p, chart, l)
+    ].join('\n');
+  }).join('\n\n');
 
   return { title: isEn ? 'Planets in Signs and Houses' : 'Planetas en signos y casas', body: blocks };
 }
@@ -360,7 +528,7 @@ function buildNakshatraSection(chart, l) {
     .map(([key, p]) => {
       const pName = PLANET_NAMES[l][key] || p.name;
       const interp = NAKSHATRA_INTERPS[l][p.nakshatraIndex] || '';
-      return `- **${pName} in ${p.nakshatra}** (pada ${p.pada}) · ${interp}`;
+      return `- **${pName} ${isEn ? 'in' : 'en'} ${p.nakshatra}** (pada ${p.pada}) · ${interp}`;
     })
     .join('\n');
 
@@ -387,77 +555,135 @@ function buildNakshatraSection(chart, l) {
 
 function buildHousesSection(chart, l) {
   const isEn = l === 'en';
-  const houseCounts = {};
-  Object.entries(chart.planets).forEach(([key, p]) => {
-    if (key === 'Asc') return;
-    houseCounts[p.house] = (houseCounts[p.house] || 0) + 1;
-  });
-  const dom = Object.entries(houseCounts).sort((a, b) => b[1] - a[1])[0];
+  const dom = dominantHouses(chart);
+  const empty = chart.houseTable.filter(h => !h.occupants.length).map(h => h.house);
+  // Casas cuyo regente está en la propia casa: temas que se sostienen solos
+  const selfRuled = chart.houseTable.filter(h => h.lordHouse === h.house).map(h => h.house);
 
-  const rows = Object.entries(houseCounts)
-    .sort((a, b) => a[0] - b[0])
-    .map(([h, count]) => {
-      const meaning = HOUSE_MEANINGS[l][parseInt(h, 10)];
-      const pWord = isEn ? (count > 1 ? 'planets' : 'planet') : (count > 1 ? 'planetas' : 'planeta');
-      return `- **${isEn ? 'House' : 'Casa'} ${h}** · ${meaning} · ${count} ${pWord}`;
-    })
-    .join('\n');
+  const domText = dom.houses.map(h => {
+    const occ = joinList(chart.houseTable[h - 1].occupants.map(k => pName(k, l)), l);
+    return isEn
+      ? `Your **House ${h}** gathers ${dom.max} planets (${occ}): a good share of your energy and attention goes to ${HOUSE_MEANINGS[l][h]}.`
+      : `Tu **Casa ${h}** reúne ${dom.max} planetas (${occ}): buena parte de tu energía y atención se vuelca en ${HOUSE_MEANINGS[l][h]}.`;
+  });
 
   return {
-    title: isEn ? 'House Distribution' : 'Casas',
+    title: isEn ? 'The Twelve Houses' : 'Las doce casas',
     body: [
       isEn
-        ? `Under the Whole Sign system, each astrological house coincides with an entire 30° zodiacal sign. Your 1st House is ${SIGNS_EN[chart.ascendant.signIndex]}, from which all subsequent houses unfold.`
-        : `En el sistema de signo completo (*Whole Sign*), cada casa coincide con un signo zodiacal entero. Tu Casa 1 es ${chart.ascendant.sign}, y desde ahí se cuentan las demás.`,
+        ? `Under the Whole Sign system, each house coincides with an entire sign. Your 1st House is ${SIGNS_EN[chart.ascendant.signIndex]}, and the rest follow in order. Each house is read through two things: the planets inside it and the planet that rules it.`
+        : `En el sistema de signo completo (*Whole Sign*), cada casa coincide con un signo entero. Tu Casa 1 es ${chart.ascendant.sign}, y desde ahí se cuentan las demás. Cada casa se lee por dos vías: los planetas que la ocupan y el planeta que la rige.`,
       '',
-      `### ${isEn ? 'Planetary Distribution' : 'Distribución planetaria'}`,
+      '{{HOUSES_TABLE}}',
       '',
-      rows,
+      `### ${isEn ? 'Where Your Energy Gathers' : 'Dónde se concentra tu energía'}`,
       '',
-      `### ${isEn ? 'Dominant House' : 'Casa dominante'}`,
+      domText.join('\n\n'),
+      '',
+      `### ${isEn ? 'Empty Houses' : 'Casas vacías'}`,
       '',
       isEn
-        ? `Your **House ${dom[0]}** gathers ${dom[1]} planets, indicating that considerable life energy and karmic activity converge around ${HOUSE_MEANINGS[l][parseInt(dom[0], 10)]}.`
-        : `Tu **Casa ${dom[0]}** agrupa ${dom[1]} planetas, lo que indica que buena parte de tu energía y atención se vuelca en ${HOUSE_MEANINGS[l][parseInt(dom[0], 10)]}: un área donde se concentran eventos y aprendizajes.`
+        ? `Houses ${joinList(empty.map(String), l)} hold no planets. An empty house is not an inactive one: its matters unfold according to its lord, whose position the table shows.`
+        : `Las casas ${joinList(empty.map(String), l)} no tienen planetas. Una casa vacía no es una casa inactiva: sus temas se desarrollan según su regente, cuya posición indica la tabla.`,
+      ...(selfRuled.length ? [
+        '',
+        isEn
+          ? `House ${joinList(selfRuled.map(String), l)} ${selfRuled.length > 1 ? 'are' : 'is'} ruled by a planet placed in ${selfRuled.length > 1 ? 'them' : 'it'}: matters that sustain themselves and tend to be stable in your life.`
+          : `${selfRuled.length > 1 ? 'Las casas' : 'La Casa'} ${joinList(selfRuled.map(String), l)} ${selfRuled.length > 1 ? 'tienen' : 'tiene'} a su regente dentro: temas que se sostienen por sí mismos y suelen ser estables en tu vida.`
+      ] : [])
     ].join('\n')
   };
 }
 
+// Qué activa un periodo: dónde está su regente en la carta natal y qué casas rige
+function dashaPlacement(lord, chart, l) {
+  const isEn = l === 'en';
+  const key = DASHA_KEY[lord];
+  const p = chart.planets[key];
+  const name = pName(key, l);
+  const sign = sName(p.signIndex, l);
+  let text = isEn
+    ? `In your chart, ${name} sits in ${sign}, House ${p.house} (${HOUSE_SHORT[l][p.house]})`
+    : `En tu carta, ${name} está en ${sign}, Casa ${p.house} (${HOUSE_SHORT[l][p.house]})`;
+  if (p.dignity) text += isEn ? `, where it ${DIGNITY[l][p.dignity].text}` : `, donde ${DIGNITY[l][p.dignity].text}`;
+  text += '. ';
+  if (p.rules.length) {
+    text += isEn
+      ? `It rules ${p.rules.length > 1 ? 'Houses' : 'House'} ${rulesPhrase(p.rules, l)}: these are the areas this period brings to the foreground.`
+      : `Rige ${p.rules.length > 1 ? 'las casas' : 'la Casa'} ${rulesPhrase(p.rules, l)}: son los ámbitos que este periodo pone en primer plano.`;
+  } else {
+    const disp = SIGN_LORD_KEYS[p.signIndex];
+    text += isEn
+      ? `As a shadow graha it works through ${pName(disp, l)}, lord of ${sign}: the period brings forward House ${p.house} and the houses ${pName(disp, l)} touches in your chart.`
+      : `Como graha de sombra actúa a través de ${pName(disp, l)}, regente de ${sign}: el periodo pone en primer plano la Casa ${p.house} y las casas que ${pName(disp, l)} toca en tu carta.`;
+  }
+  return text;
+}
+
+// Versión breve para el subperiodo: dónde está su regente y qué casas suma
+function subPlacement(lord, chart, l) {
+  const isEn = l === 'en';
+  const key = DASHA_KEY[lord];
+  const p = chart.planets[key];
+  const focus = [p.house, ...p.rules.filter(h => h !== p.house)];
+  return isEn
+    ? `${capFirst(pArt(key, l))}, in House ${p.house} of your chart${p.rules.length ? ` and lord of ${p.rules.length > 1 ? 'Houses' : 'House'} ${joinList(p.rules.map(String), l)}` : ''}, brings ${joinList(focus.map(h => HOUSE_SHORT[l][h]), l)} into these months.`
+    : `${capFirst(pArt(key, l))}, en la Casa ${p.house} de tu carta${p.rules.length ? ` y regente de ${p.rules.length > 1 ? 'las casas' : 'la Casa'} ${joinList(p.rules.map(String), l)}` : ''}, trae a estos meses los temas de ${focus.map(h => HOUSE_SHORT[l][h]).join(', ')}.`;
+}
+
 function buildDashaSection(chart, l) {
   const isEn = l === 'en';
-  const now = new Date();
-  const cur = chart.currentDasha;
-  const curLord = cur.lord;
-  const interp = DASHA_INTERPS[l][curLord] || '';
+  const md = chart.currentDasha;
+  const ad = chart.currentAntardasha;
+  const mdName = dashaLordName(md.lord, l);
+  const fmt = (n) => n.toFixed(1).replace('.', isEn ? '.' : ',');
+  const lowerFirst = (s) => s.charAt(0).toLowerCase() + s.slice(1);
 
-  const list = chart.dashas.map(d => {
-    const active = d.start <= now && d.end > now;
-    const activeTag = active ? (isEn ? ' (current)' : ' (actual)') : '';
-    const yrWord = isEn ? 'years' : 'años';
-    return `- **${d.lord}** (${d.years.toFixed(1)} ${yrWord}) · ${d.start.getFullYear()}–${d.end.getFullYear()}${activeTag}`;
-  }).join('\n');
+  const body = [
+    isEn
+      ? 'The 120-year Vimshottari Dasha system is the cornerstone of predictive Jyotish. Starting from the Moon’s exact degree at birth, it divides life into major periods (*mahādaśā*) ruled by different planets, each subdivided into sub-periods (*antardaśā*) that fine-tune its tone.'
+      : 'El sistema Vimshottari Dasha es la herramienta predictiva central del jyotish. A partir del grado exacto de la Luna al nacer, divide la vida en periodos mayores (*mahādaśā*) regidos por distintos planetas, y cada uno en subperiodos (*antardaśā*) que matizan su tono.',
+    '',
+    '{{DASHA_TABLE}}',
+    '',
+    `### ${isEn ? `Current Major Period: ${mdName}` : `Periodo mayor actual: ${mdName}`}`,
+    '',
+    `**${isEn ? 'Duration' : 'Duración'}:** ${fmt(md.years)} ${isEn ? 'years' : 'años'} · **${isEn ? 'Timeline' : 'Fechas'}:** ${yearSpan(md.start, md.end)}`,
+    '',
+    DASHA_INTERPS[l][md.lord] || '',
+    '',
+    dashaPlacement(md.lord, chart, l)
+  ];
+
+  if (ad) {
+    const adName = dashaLordName(ad.lord, l);
+    body.push(
+      '',
+      `### ${isEn ? `Sub-periods of ${mdName}` : `Subperiodos de ${mdName}`}`,
+      '',
+      (isEn
+        ? `You are now in the **${mdName}–${adName}** sub-period (${yearSpan(ad.start, ad.end)}). ${ad.lord === md.lord ? `Its first sub-period concentrates the pure tone of ${mdName}.` : `Within the climate of ${mdName}, it adds a note of ${lowerFirst(DASHA_INTERPS[l][ad.lord]).replace(/^period of /, '').replace(/\.$/, '')}.`}`
+        : `Ahora transitas el subperiodo **${mdName}–${adName}** (${yearSpan(ad.start, ad.end)}). ${ad.lord === md.lord ? `Es el primer subperiodo y concentra el tono puro de ${mdName}.` : `Dentro del clima de ${mdName}, añade una nota de ${lowerFirst(DASHA_INTERPS[l][ad.lord]).replace(/^periodo de /, '').replace(/\.$/, '')}.`}`) + ' ' + subPlacement(ad.lord, chart, l),
+      '',
+      '{{ANTARDASHA_TABLE}}'
+    );
+  }
+
+  if (chart.nextDasha) {
+    const nx = chart.nextDasha;
+    body.push(
+      '',
+      `### ${isEn ? 'What Comes Next' : 'Lo que viene'}`,
+      '',
+      isEn
+        ? `In ${nx.start.getFullYear()} the major period of **${dashaLordName(nx.lord, l)}** begins (${fmt(nx.years)} years). ${DASHA_INTERPS[l][nx.lord]}`
+        : `En ${nx.start.getFullYear()} comienza el periodo mayor de **${dashaLordName(nx.lord, l)}** (${fmt(nx.years)} años). ${DASHA_INTERPS[l][nx.lord]}`
+    );
+  }
 
   return {
-    title: isEn ? 'Planetary Seasons · Vimshottari Dasha' : 'Periodos · Vimshottari Dasha',
-    body: [
-      isEn
-        ? 'The 120-year Vimshottari Dasha system is the cornerstone of classical predictive Jyotish. Originating from the Moon’s exact degree at birth, it divides life into chapters governed by distinct planetary archetypes.'
-        : 'El sistema Vimshottari Dasha es una de las herramientas predictivas más usadas del jyotish. A partir de la posición de la Luna al nacer, divide la vida en periodos regidos por distintos planetas, cada uno con su cualidad y sus lecciones.',
-      '',
-      `### ${isEn ? 'Dasha Sequence' : 'Secuencia de dashas'}`,
-      '',
-      list,
-      '',
-      `### ${isEn ? `Current Major Period: ${curLord}` : `Periodo actual: ${curLord}`}`,
-      '',
-      `**${isEn ? 'Duration' : 'Duración'}:** ${cur.years.toFixed(1)} ${isEn ? 'years' : 'años'} · **${isEn ? 'Timeline' : 'Fechas'}:** ${cur.start.getFullYear()}–${cur.end.getFullYear()}`,
-      '',
-      interp,
-      '',
-      isEn
-        ? `This planetary archetype sets the thematic atmosphere of your current chapter. The events, opportunities, and inner reflections will resonate with the nature of ${curLord} and its natal house placement.`
-        : `Este es el clima astrológico que atraviesas hoy. Los eventos, oportunidades y desafíos del periodo estarán teñidos por la energía de ${curLord} y por su posición en tu carta natal.`
-    ].join('\n')
+    title: isEn ? 'Planetary Periods · Vimshottari Dasha' : 'Periodos · Vimshottari Dasha',
+    body: body.join('\n')
   };
 }
 
@@ -485,23 +711,171 @@ function buildSynthesis(chart, l) {
         ? `- **Moon in ${SIGNS_EN[chart.planets.Mo.signIndex]}** · emotional mind and inner sanctuary · ${moonSign.keywords}`
         : `- **Luna en ${chart.planets.Mo.sign}** · la mente emocional y las necesidades internas · ${moonSign.keywords}`,
       '',
-      `### ${isEn ? 'Dharmic Direction' : 'Dharma'}`,
+      `### ${isEn ? 'Where Your Path Leads' : 'Hacia dónde apunta tu camino'}`,
       '',
-      isEn
-        ? `With ${SIGNS_EN[asc.signIndex]} rising and the Sun in ${SIGNS_EN[chart.planets.Su.signIndex]}, your purpose centers on cultivating clear mastery over your gifts and aligning your actions with higher service. Your lunar nakshatra, ${chart.planets.Mo.nakshatra}, grounds this with emotional depth.`
-        : `Con ${asc.sign} ascendente y el Sol en ${chart.planets.Su.sign}, tu camino pasa por desarrollar tus talentos únicos y compartirlos con el mundo. Tu nakshatra lunar, ${chart.planets.Mo.nakshatra}, aporta cualidad y profundidad emocional.`,
+      synthesisDirection(chart, l),
+      '',
+      `### ${isEn ? 'Strengths' : 'Fortalezas'}`,
+      '',
+      synthesisStrengths(chart, l),
       '',
       `### ${isEn ? 'Karmic Lessons' : 'Desafíos kármicos'}`,
       '',
-      isEn
-        ? `Saturn in ${SIGNS_EN[chart.planets.Sa.signIndex]} (House ${chart.planets.Sa.house}) indicates that your deepest maturation arises through patience, structured responsibility, and steady perseverance. Rahu in ${SIGNS_EN[chart.planets.Ra.signIndex]} marks your evolutionary growth edge, while Ketu in ${SIGNS_EN[chart.planets.Ke.signIndex]} highlights innate strengths mastered across past cycles.`
-        : `Saturno en ${chart.planets.Sa.sign} (Casa ${chart.planets.Sa.house}) señala que tus lecciones principales pasan por la disciplina y la maduración constante. Rahu en ${chart.planets.Ra.sign} marca el área de crecimiento evolutivo, mientras Ketu en ${chart.planets.Ke.sign} indica talentos innatos ya cultivados.`,
+      synthesisLessons(chart, l),
       '',
-      '---',
+      `### ${isEn ? 'The Present Moment' : 'El momento presente'}`,
+      '',
+      synthesisNow(chart, l),
       '',
       isEn
-        ? 'This report is an instrument of self-knowledge, not a rigid verdict. Jyotish maps the landscape; you navigate the journey.'
-        : 'Este informe es una herramienta de autoconocimiento, no una sentencia fija. El jyotish muestra el mapa; tú recorres el camino.'
+        ? '> This report is an instrument of self-knowledge, not a rigid verdict. Jyotish maps the landscape; you navigate the journey.'
+        : '> Este informe es una herramienta de autoconocimiento, no una sentencia fija. El jyotish muestra el mapa; tú recorres el camino.'
+    ].join('\n')
+  };
+}
+
+// ---------- Síntesis: cada párrafo se arma con datos de la carta ----------
+
+const ELEMENT_TRAITS = {
+  es: { fire: 'la iniciativa y el entusiasmo', earth: 'la constancia y el sentido práctico', air: 'la reflexión y el intercambio de ideas', water: 'la sensibilidad y la intuición' },
+  en: { fire: 'initiative and enthusiasm', earth: 'steadiness and practical sense', air: 'reflection and the exchange of ideas', water: 'sensitivity and intuition' }
+};
+
+function synthesisDirection(chart, l) {
+  const isEn = l === 'en';
+  const P = chart.planets;
+  const rulerKey = SIGN_LORD_KEYS[chart.ascendant.signIndex];
+  const ruler = P[rulerKey];
+  const ninth = chart.houseTable[8];
+  const el = elementBalance(chart);
+  const dom = dominantHouses(chart).houses.filter(h => h !== ruler.house);
+  const parts = [];
+
+  parts.push(isEn
+    ? `The ruler of your Ascendant, ${pArt(rulerKey, l)} in House ${ruler.house}, orients your life towards ${HOUSE_MEANINGS[l][ruler.house]}.`
+    : `El regente de tu Ascendente, ${pArt(rulerKey, l)} en la Casa ${ruler.house}, orienta tu vida hacia ${HOUSE_MEANINGS[l][ruler.house]}.`);
+  if (dom.length) {
+    parts.push(isEn
+      ? `House ${joinList(dom.map(String), l)}, the most populated, adds the domain of ${joinList(dom.map(h => HOUSE_SHORT[l][h]), l)}.`
+      : `${dom.length > 1 ? 'Las casas' : 'La Casa'} ${joinList(dom.map(String), l)}, ${dom.length > 1 ? 'las más pobladas, suman' : 'la más poblada, suma'} los temas de ${joinList(dom.map(h => HOUSE_SHORT[l][h]), l)}.`);
+  }
+  parts.push(isEn
+    ? `The lord of your 9th House, the house of dharma, is ${pArt(ninth.lord, l)} in House ${ninth.lordHouse}: your sense of purpose is realised through ${HOUSE_MEANINGS[l][ninth.lordHouse]}.`
+    : `El regente de tu Casa 9, la del dharma, es ${pArt(ninth.lord, l)} en la Casa ${ninth.lordHouse}: tu sentido de propósito se realiza a través de ${HOUSE_MEANINGS[l][ninth.lordHouse]}.`);
+  parts.push(isEn
+    ? `${ELEMENT_NAMES[l][el.dominant]} prevails (${el.count} of 7 grahas), which gives you ${ELEMENT_TRAITS[l][el.dominant]}.`
+    : `Predomina el ${ELEMENT_NAMES[l][el.dominant]} (${el.count} de 7 grahas), que te da ${ELEMENT_TRAITS[l][el.dominant]}.`);
+  if (el.missing.length) {
+    parts.push(isEn
+      ? `The absence of ${joinList(el.missing.map(k => ELEMENT_NAMES[l][k]), l)} points to a quality worth cultivating consciously: ${joinList(el.missing.map(k => ELEMENT_TRAITS[l][k]), l)}.`
+      : `La ausencia de ${joinList(el.missing.map(k => ELEMENT_NAMES[l][k]), l)} señala una cualidad que conviene cultivar a conciencia: ${joinList(el.missing.map(k => ELEMENT_TRAITS[l][k]), l)}.`);
+  }
+  return parts.join(' ');
+}
+
+function synthesisStrengths(chart, l) {
+  const isEn = l === 'en';
+  const P = chart.planets;
+  const strong = strongPlanets(chart);
+  const desc = (k) => `${pArt(k, l)} (${DIGNITY[l][P[k].dignity].label.toLowerCase()}, ${houseWord(l)} ${P[k].house})`;
+  const parts = [];
+  if (strong.length) {
+    parts.push(isEn
+      ? `Your firmest ${strong.length > 1 ? 'grahas are' : 'graha is'} ${joinList(strong.map(desc), l)}: you can lean on the matters ${strong.length > 1 ? 'they govern' : 'it governs'}.`
+      : `${strong.length > 1 ? 'Tus grahas más firmes son' : 'Tu graha más firme es'} ${joinList(strong.map(desc), l)}: puedes apoyarte en los temas que ${strong.length > 1 ? 'gobiernan' : 'gobierna'}.`);
+  } else {
+    parts.push(isEn
+      ? 'No graha is exalted or in its own sign: your strength is not concentrated in one point but spread out, and it is built over time.'
+      : 'Ningún graha está exaltado ni en su propio signo: tu fuerza no se concentra en un punto, se reparte y se construye con el tiempo.');
+  }
+  if (!strong.includes('Ju')) {
+    parts.push(isEn
+      ? `Jupiter, the great benefic, protects the matters of House ${P.Ju.house} (${HOUSE_SHORT[l][P.Ju.house]}).`
+      : `Júpiter, el gran benéfico, protege los temas de la Casa ${P.Ju.house} (${HOUSE_SHORT[l][P.Ju.house]}).`);
+  }
+  return parts.join(' ');
+}
+
+function synthesisLessons(chart, l) {
+  const isEn = l === 'en';
+  const P = chart.planets;
+  const weak = weakPlanets(chart);
+  const retro = ['Ma', 'Me', 'Ju', 'Ve', 'Sa'].filter(k => P[k].retrograde);
+  const parts = [];
+  if (weak.length) {
+    parts.push(capFirst(isEn
+      ? `${joinList(weak.map(k => `${pArt(k, l)} (House ${P[k].house})`), l)} ${weak.length > 1 ? 'are' : 'is'} debilitated: ${weak.length > 1 ? 'their' : 'its'} matters ask for patience and conscious work, and often become a source of wisdom once matured.`
+      : `${joinList(weak.map(k => `${pArt(k, l)} (Casa ${P[k].house})`), l)} ${weak.length > 1 ? 'están' : 'está'} en caída: sus temas piden paciencia y trabajo consciente, y una vez madurados suelen convertirse en fuente de sabiduría.`));
+  }
+  parts.push(isEn
+    ? `Saturn in House ${P.Sa.house} shows where maturity comes slowly but solidly: ${HOUSE_MEANINGS[l][P.Sa.house]}.`
+    : `Saturno en la Casa ${P.Sa.house} muestra dónde la madurez llega despacio pero firme: ${HOUSE_MEANINGS[l][P.Sa.house]}.`);
+  parts.push(isEn
+    ? `The Rahu–Ketu axis runs between House ${P.Ra.house} (${HOUSE_SHORT[l][P.Ra.house]}), where you are called to grow, and House ${P.Ke.house} (${HOUSE_SHORT[l][P.Ke.house]}), where you carry talents already mastered.`
+    : `El eje Rahu–Ketu se tiende entre la Casa ${P.Ra.house} (${HOUSE_SHORT[l][P.Ra.house]}), hacia donde te toca crecer, y la Casa ${P.Ke.house} (${HOUSE_SHORT[l][P.Ke.house]}), donde traes talentos ya cultivados.`);
+  if (retro.length) {
+    parts.push(isEn
+      ? `${joinList(retro.map(k => pName(k, l)), l)} ${retro.length > 1 ? 'were' : 'was'} retrograde at birth: themes you revisit and refine more than once.`
+      : `${joinList(retro.map(k => pName(k, l)), l)} ${retro.length > 1 ? 'estaban retrógrados' : 'estaba retrógrado'} al nacer: temas que se revisan y pulen más de una vez.`);
+  }
+  return parts.join(' ');
+}
+
+function synthesisNow(chart, l) {
+  const isEn = l === 'en';
+  const md = chart.currentDasha, ad = chart.currentAntardasha;
+  const mdKey = DASHA_KEY[md.lord];
+  const p = chart.planets[mdKey];
+  const focus = [p.house, ...p.rules.filter(h => h !== p.house)];
+  const adText = ad && ad.lord !== md.lord
+    ? (isEn ? `, in its ${dashaLordName(ad.lord, l)} sub-period until ${ad.end.getFullYear()}` : `, en su subperiodo de ${dashaLordName(ad.lord, l)} hasta ${ad.end.getFullYear()}`)
+    : '';
+  return isEn
+    ? `You are living the major period of ${dashaLordName(md.lord, l)} until ${md.end.getFullYear()}${adText}. It is a time to work on ${focus.length > 1 ? 'Houses' : 'House'} ${rulesPhrase(focus, l)}: the houses this planet occupies and rules in your chart.`
+    : `Vives el periodo mayor de ${dashaLordName(md.lord, l)} hasta ${md.end.getFullYear()}${adText}. Es un tiempo para trabajar ${focus.length > 1 ? 'las casas' : 'la Casa'} ${rulesPhrase(focus, l)}: las que este planeta ocupa y rige en tu carta.`;
+}
+
+// ---------- Glosario y método ----------
+
+function buildGlossary(chart, l) {
+  const isEn = l === 'en';
+  const terms = isEn ? [
+    ['Graha', 'each of the nine celestial bodies of Jyotish: the Sun, the Moon, five planets and the lunar nodes Rahu and Ketu.'],
+    ['Rāśi', 'zodiac sign. Jyotish uses the sidereal zodiac, aligned with the actual constellations.'],
+    ['Lagna', 'the Ascendant: the sign rising on the eastern horizon at the moment of birth. It defines House 1.'],
+    ['Bhāva', 'house: each of the twelve areas of life. Here each house coincides with a whole sign (Whole Sign).'],
+    ['House lord', 'the planet that rules the sign of a house. Where it sits shows how the matters of that house unfold.'],
+    ['Nakshatra', 'each of the 27 lunar mansions of 13°20′; they add psychological nuance to the signs.'],
+    ['Pada', 'each quarter of a nakshatra (3°20′).'],
+    ['Navāṃśa (D-9)', 'divisional chart that splits each sign into nine parts; it shows the inner maturity of each graha.'],
+    ['Dignity', 'how comfortable a graha is in its sign: exalted, mūlatrikoṇa, own, friendly, neutral, enemy or debilitated.'],
+    ['Retrograde', 'apparent backward motion of a planet as seen from Earth; its themes tend to turn inward.'],
+    ['Mahādaśā · Antardaśā', 'major period and sub-period of the Vimshottari Dasha system.'],
+    ['Ayanāṃśa', 'the difference between the tropical and the sidereal zodiac. This report uses Lahiri.']
+  ] : [
+    ['Graha', 'cada uno de los nueve cuerpos celestes del jyotish: Sol, Luna, cinco planetas y los nodos lunares Rahu y Ketu.'],
+    ['Rāśi', 'signo zodiacal. El jyotish usa el zodíaco sidéreo, alineado con las constelaciones reales.'],
+    ['Lagna', 'el Ascendente: el signo que asciende por el horizonte este en el momento del nacimiento. Define la Casa 1.'],
+    ['Bhāva', 'casa: cada una de las doce áreas de la vida. Aquí cada casa coincide con un signo entero (*Whole Sign*).'],
+    ['Regente', 'el planeta que rige el signo de una casa. Su posición muestra cómo se desarrollan los temas de esa casa.'],
+    ['Nakshatra', 'cada una de las 27 mansiones lunares de 13°20′; añaden matices psicológicos a los signos.'],
+    ['Pada', 'cada cuarto de una nakshatra (3°20′).'],
+    ['Navāṃśa (D-9)', 'carta divisional que divide cada signo en nueve partes; muestra la madurez interior de cada graha.'],
+    ['Dignidad', 'qué tan cómodo está un graha en su signo: exaltado, mūlatrikoṇa, propio, amigo, neutral, enemigo o en caída.'],
+    ['Retrógrado', 'movimiento aparente hacia atrás de un planeta visto desde la Tierra; sus temas tienden a volverse hacia dentro.'],
+    ['Mahādaśā · Antardaśā', 'periodo mayor y subperiodo del sistema Vimshottari Dasha.'],
+    ['Ayanāṃśa', 'la diferencia entre el zodíaco tropical y el sidéreo. Este informe usa el de Lahiri.']
+  ];
+  return {
+    title: isEn ? 'Glossary and Method' : 'Glosario y método',
+    body: [
+      terms.map(([t, d]) => `- **${t}** · ${d}`).join('\n'),
+      '',
+      `### ${isEn ? 'How This Chart Was Calculated' : 'Cómo se calculó esta carta'}`,
+      '',
+      isEn
+        ? `Planetary positions come from the astronomy-engine ephemeris and are converted to the sidereal zodiac with the Lahiri ayanāṃśa (${chart.subject.ayanamsa.replace(/^Lahiri\s*\(|\)$/g, '')} at your birth). Houses follow the Whole Sign system, Rahu is the mean lunar node, and dignities follow the classical rules of Parāśara.`
+        : `Las posiciones planetarias provienen de las efemérides de astronomy-engine y se convierten al zodíaco sidéreo con el ayanāṃśa de Lahiri (${chart.subject.ayanamsa.replace(/^Lahiri\s*\(|\)$/g, '')} en tu nacimiento). Las casas siguen el sistema de signo completo, Rahu es el nodo lunar medio y las dignidades siguen las reglas clásicas de Parāśara.`
     ].join('\n')
   };
 }
