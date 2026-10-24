@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informe astrológico védico · jyotish</title>
+  <meta name="description" content="Carta natal védica en PDF: posiciones sidéreas, nakshatras y periodos vimshottari, calculadas con tu fecha, hora y lugar de nacimiento.">
+  <meta name="theme-color" content="#faf9f5">
+  <style>
+    :root {
+      --paper: #f8fafc;
+      --card: #ffffff;
+      --ink: #0d1b2a;
+      --body: #1f3044;
+      --muted: #415a77;
+      --faint: #6e849f;
+      --line: #d8e2ed;
+      --accent: #96382a;
+      --cyan: #148096;
+      --cyan-muted: #1b6878;
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", Georgia, "Times New Roman", serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--serif);
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--body);
+      background-color: var(--paper);
+      background-image: url("yantra-pattern.svg");
+      background-repeat: repeat;
+      background-position: center top;
+      background-size: 340px 340px;
+      background-attachment: fixed;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; padding: 0 24px 90px; }
+
+    /* cabecera */
+    .site {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 30px 0 16px; border-bottom: 1px solid var(--line);
+    }
+    .site .mark { color: var(--ink); font-size: 19px; letter-spacing: .02em; }
+    .site .mark .om { color: var(--accent); margin-right: 9px; }
+    .site .tag { color: var(--muted); font-style: italic; font-size: 14px; }
+
+    /* apertura */
+    h1 {
+      color: var(--ink);
+      font-size: clamp(32px, 5.5vw, 44px);
+      line-height: 1.14; font-weight: 400; letter-spacing: -0.01em;
+      margin: 60px 0 22px; text-wrap: balance;
+    }
+    .lede { font-size: 18.5px; line-height: 1.62; max-width: 33em; text-wrap: pretty; }
+    .deal {
+      margin-top: 26px; font-size: 13px; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .deal strong { color: var(--accent); font-weight: 600; }
+
+    /* navegación de pestañas */
+    .tabs-nav {
+      display: flex; gap: 28px; margin-top: 48px;
+      border-bottom: 1px solid var(--line);
+    }
+    .tab-btn {
+      background: none; border: none; padding: 12px 2px 14px;
+      font-family: var(--serif); font-size: 17px; color: var(--muted);
+      cursor: pointer; position: relative; letter-spacing: .01em;
+      transition: color .15s ease;
+    }
+    .tab-btn:hover { color: var(--ink); }
+    .tab-btn.active { color: var(--ink); font-weight: 600; }
+    .tab-btn.active::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+      height: 2px; background: var(--accent);
+    }
+    .tab-btn .tab-badge {
+      font-size: 11.5px; font-weight: 400; text-transform: uppercase;
+      letter-spacing: .12em; color: var(--muted); margin-left: 6px;
+    }
+    .tab-panel[hidden] { display: none; }
+
+    /* secciones */
+    section { margin-top: 52px; }
+    .tab-panel > section:first-child { margin-top: 36px; }
+    .kicker {
+      font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--faint); margin-bottom: 14px;
+    }
+    section > p { max-width: 35em; }
+
+    /* lista de contenidos */
+    ul.includes { list-style: none; margin-top: 4px; }
+    ul.includes li { padding: 13px 2px; border-bottom: 1px solid var(--line); }
+    ul.includes li:first-child { border-top: 1px solid var(--line); }
+    ul.includes b { color: var(--ink); font-weight: 600; }
+
+    /* formulario */
+    .row { display: grid; gap: 18px; margin-bottom: 20px; }
+    .row-3 { grid-template-columns: 1fr 1.6fr 1.2fr; }
+    .row-time { grid-template-columns: 1fr 1fr 1.8fr; }
+    .row-2 { grid-template-columns: 1fr 1fr; }
+    .field label { display: block; font-size: 14px; color: var(--ink); margin-bottom: 7px; }
+    input, select {
+      width: 100%; height: 46px;
+      font: inherit; font-size: 16px; color: var(--ink);
+      background: var(--card); border: 1px solid var(--line); border-radius: 3px;
+      padding: 8px 12px;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    input::placeholder { color: var(--faint); }
+    .help { font-size: 13.5px; color: var(--muted); margin: -8px 0 20px; line-height: 1.55; }
+
+    /* pago */
+    .pay { border-top: 1px solid var(--line); margin-top: 34px; padding-top: 26px; }
+    .price { font-size: 23px; color: var(--ink); margin-bottom: 8px; }
+    .price .cur { color: var(--accent); }
+    .pay .note { font-size: 14px; color: var(--muted); max-width: 32em; }
+    #paypal-button-container { margin-top: 20px; max-width: 250px; }
+    #error { color: var(--accent); font-size: 14px; margin-top: 14px; }
+
+    /* estados */
+    #success h2 { color: var(--ink); font-size: 26px; font-weight: 400; line-height: 1.25; margin: 6px 0 4px; }
+    .summary { margin-top: 22px; border-top: 1px solid var(--line); }
+    .summary > div { display: flex; gap: 18px; padding: 11px 2px; border-bottom: 1px solid var(--line); }
+    .summary dt { flex: none; width: 140px; color: var(--muted); font-size: 14px; }
+    .summary dd { margin: 0; color: var(--ink); }
+    .btn {
+      display: inline-block; margin-top: 24px; padding: 12px 28px;
+      background: var(--ink); color: var(--paper); text-decoration: none;
+      border-radius: 3px; font-size: 16px;
+    }
+    .btn:hover { background: #000; }
+
+    /* pie */
+    footer {
+      margin-top: 96px; border-top: 1px solid var(--line); padding-top: 22px;
+      font-size: 13.5px; color: var(--muted); line-height: 1.8;
+    }
+    footer .om { color: var(--accent); }
+
+    .includes .glyph { font-size: 14.5px; color: var(--accent); letter-spacing: .6px; margin-right: 6px; }
+
+    /* ejemplo: carta de muestra */
+    .sample-title { color: var(--ink); font-size: 26px; font-weight: 400; line-height: 1.25; margin: 6px 0 14px; }
+    figure.chart { margin: 30px 0 6px; }
+    figure.chart svg {
+      display: block; width: 100%; max-width: 440px; height: auto;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 1px 4px rgba(13, 27, 42, 0.04);
+      border: 1px solid var(--line);
+    }
+    figure.chart text { font-family: var(--serif); }
+    figcaption { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.55; max-width: 440px; }
+    ul.positions { list-style: none; margin-top: 26px; border-top: 1px solid var(--line); }
+    ul.positions li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
+    ul.positions .g { flex: none; width: 24px; color: var(--accent); font-size: 15px; }
+    ul.positions .pl { flex: none; width: 92px; color: var(--ink); font-weight: 500; }
+    ul.positions .pos { color: var(--body); }
+    ul.positions .details { margin-left: auto; display: flex; gap: 14px; align-items: baseline; }
+    ul.positions .nak { color: var(--muted); font-size: 13.5px; }
+    ul.positions .navamsha { color: var(--cyan); font-size: 13px; font-weight: 500; }
+    .dasha-line { margin-top: 16px; font-size: 13.5px; color: var(--muted); line-height: 1.7; max-width: 38em; }
+    .dasha-line b { color: var(--body); font-weight: 600; }
+    .excerpt { margin-top: 38px; }
+    .excerpt p.body-p { max-width: 35em; margin-bottom: 14px; }
+    .sample-cta { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 18px; }
+    .sample-cta a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent); }
+    .sample-cta a:hover { color: var(--ink); border-color: var(--ink); }
+    .fineprint { margin-top: 18px; font-size: 13px; color: var(--faint); line-height: 1.6; max-width: 38em; }
+
+    @media (max-width: 600px) {
+      .row-3, .row-time, .row-2 { grid-template-columns: 1fr; }
+      .help { margin-top: -4px; }
+      ul.positions .details { margin-left: 0; width: 100%; padding-left: 36px; gap: 10px; }
+    }
+    @media (max-width: 480px) { .site .tag { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <div class="mark"><span class="om">ॐ</span>jyotish</div>
+      <div class="tag">informes de astrología védica</div>
+    </header>
+
+    <section>
+      <h1>Tu carta natal védica, en un informe.</h1>
+      <p class="lede">
+        Un PDF de unas ocho páginas, calculado con la posición real de los planetas
+        en tu fecha, hora y lugar de nacimiento, e interpretado según la tradición
+        india del jyotish.
+      </p>
+      <p class="deal"><strong>1.99 USD</strong> &middot; pago único &middot; entrega inmediata</p>
+    </section>
+
+    <!-- Navegación por pestañas -->
+    <nav class="tabs-nav" role="tablist" aria-label="Secciones">
+      <button type="button" class="tab-btn active" id="tabOrderBtn" role="tab" aria-selected="true" aria-controls="panelOrder">
+        Pedir tu informe
+      </button>
+      <button type="button" class="tab-btn" id="tabSampleBtn" role="tab" aria-selected="false" aria-controls="panelSample">
+        Ejemplo <span class="tab-badge">Paul Erdős</span>
+      </button>
+    </nav>
+
+    <!-- Panel 1: Pedir informe (formulario de compra arriba) -->
+    <div id="panelOrder" class="tab-panel" role="tabpanel" aria-labelledby="tabOrderBtn">
+      <section id="order">
+        <p class="kicker">Tus datos</p>
+        <form id="birthForm">
+          <div class="field" style="margin-bottom: 20px;">
+            <label for="name">Nombre</label>
+            <input type="text" id="name" name="name" required autocomplete="name"
+                   placeholder="Como quieres que figure en el informe">
+          </div>
+
+          <div class="row row-3">
+            <div class="field">
+              <label for="day">Día</label>
+              <input type="number" id="day" name="day" min="1" max="31" required placeholder="4">
+            </div>
+            <div class="field">
+              <label for="month">Mes</label>
+              <select id="month" name="month" required>
+                <option value="" selected disabled>Elegir mes</option>
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="year">Año</label>
+              <input type="number" id="year" name="year" min="1920" max="2026" required placeholder="1997">
+            </div>
+          </div>
+
+          <div class="row row-time">
+            <div class="field">
+              <label for="hour">Hora</label>
+              <input type="number" id="hour" name="hour" min="0" max="23" required placeholder="13">
+            </div>
+            <div class="field">
+              <label for="minute">Minuto</label>
+              <input type="number" id="minute" name="minute" min="0" max="59" required placeholder="0">
+            </div>
+            <div class="field">
+              <label for="timezone">Zona horaria</label>
+              <select id="timezone" name="timezone" required>
+                <option value="-8">UTC−8 · Pacífico (Los Ángeles)</option>
+                <option value="-6">UTC−6 · México, Centroamérica</option>
+                <option value="-5">UTC−5 · Este de EE. UU., Bogotá, Lima</option>
+                <option value="-4">UTC−4 · Caracas, La Paz, San Juan</option>
+                <option value="-3" selected>UTC−3 · Chile, Argentina, Uruguay</option>
+                <option value="0">UTC±0 · Londres, Madrid (invierno)</option>
+                <option value="1">UTC+1 · Madrid (verano), París, Berlín</option>
+                <option value="2">UTC+2 · Atenas, El Cairo, Johannesburgo</option>
+                <option value="3">UTC+3 · Estambul, Moscú, Arabia</option>
+                <option value="5.5">UTC+5:30 · India</option>
+                <option value="8">UTC+8 · China, Filipinas, Singapur</option>
+                <option value="9">UTC+9 · Japón, Corea</option>
+                <option value="10">UTC+10 · Australia oriental</option>
+              </select>
+            </div>
+          </div>
+          <p class="help">Si no conoces la hora exacta, un aproximado sirve: el ascendente es lo más sensible al error.</p>
+
+          <div class="field" style="margin-bottom: 20px;">
+            <label for="place">Lugar de nacimiento</label>
+            <input type="text" id="place" name="place" required list="citiesList" autocomplete="off"
+                   placeholder="Santiago, Chile (o tu ciudad)">
+            <datalist id="citiesList">
+              <option value="Santiago, Chile">
+              <option value="Buenos Aires, Argentina">
+              <option value="Córdoba, Argentina">
+              <option value="Mendoza, Argentina">
+              <option value="Montevideo, Uruguay">
+              <option value="Lima, Perú">
+              <option value="Bogotá, Colombia">
+              <option value="Medellín, Colombia">
+              <option value="Ciudad de México, México">
+              <option value="Guadalajara, México">
+              <option value="Monterrey, México">
+              <option value="Madrid, España">
+              <option value="Barcelona, España">
+              <option value="Quito, Ecuador">
+              <option value="Caracas, Venezuela">
+              <option value="La Paz, Bolivia">
+              <option value="Asunción, Paraguay">
+              <option value="San José, Costa Rica">
+              <option value="Miami, EE. UU.">
+            </datalist>
+          </div>
+
+          <div class="row row-2" style="margin-bottom: 0;">
+            <div class="field">
+              <label for="lat">Latitud</label>
+              <input type="number" id="lat" name="lat" step="0.01" required placeholder="-33.45">
+            </div>
+            <div class="field">
+              <label for="lon">Longitud</label>
+              <input type="number" id="lon" name="lon" step="0.01" required placeholder="-70.65">
+            </div>
+          </div>
+          <p class="help" id="geoHelp">Se completan automáticamente al elegir o escribir tu ciudad, o puedes ajustarlas a mano.</p>
+
+          <div class="pay">
+            <p class="price"><span class="cur">1.99 USD</span> &middot; pago único</p>
+            <p class="note">
+              El pago se procesa con PayPal. Al confirmarlo, tu informe se genera y se
+              descarga al instante. Los datos se usan únicamente para calcular tu carta.
+            </p>
+            <div id="paypal-button-container"></div>
+            <p id="error" role="alert" hidden></p>
+          </div>
+        </form>
+
+        <div id="loading" hidden>
+          <p class="lede">Generando tu informe… puede tomar unos segundos.</p>
+        </div>
+
+        <div id="success" hidden>
+          <p class="kicker">Listo</p>
+          <h2>Pago recibido. Tu informe está preparado.</h2>
+          <dl class="summary">
+            <div><dt>Ascendente</dt><dd id="ascResult"></dd></div>
+            <div><dt>Sol</dt><dd id="sunResult"></dd></div>
+            <div><dt>Luna</dt><dd id="moonResult"></dd></div>
+            <div><dt>Periodo actual</dt><dd id="dashaResult"></dd></div>
+          </dl>
+          <a class="btn" id="downloadBtn" href="#" download>Descargar el informe (PDF)</a>
+        </div>
+      </section>
+
+      <section>
+        <p class="kicker">Qué incluye</p>
+        <ul class="includes">
+          <li><b><span class="glyph">☉ ☽ Asc</span> Ascendente, sol y luna</b> en signos sidéreos, con grados, nakshatra y pada.</li>
+          <li><b><span class="glyph">☉ ☽ ♂ ☿ ♃ ♀ ♄ ☊ ☋</span> Siete planetas, rahu y ketu</b> en su signo, casa y nakshatra, con interpretación de cada uno.</li>
+          <li><b>Balance elemental</b> de fuego, tierra, aire y agua, con lectura del temperamento.</li>
+          <li><b>Periodos vimshottari dasha</b>: la secuencia completa de tu vida y el periodo que te rige hoy.</li>
+          <li><b>Síntesis final</b> con propósito, lecciones kármicas y lectura integrada de la carta.</li>
+        </ul>
+      </section>
+
+      <section>
+        <p class="kicker">Método</p>
+        <p>
+          El jyotish trabaja con el zodíaco sidéreo: las posiciones corresponden a las
+          constelaciones reales, no al punto del equinoccio que usa la astrología
+          occidental. Por eso tu sol védico suele caer un signo antes que el occidental.
+          Los cálculos usan el ayanamsa Lahiri, casas por signo completo y efemérides
+          astronómicas precisas.
+        </p>
+      </section>
+    </div>
+
+    <!-- Panel 2: Ejemplo de la carta de Erdős -->
+    <div id="panelSample" class="tab-panel" role="tabpanel" aria-labelledby="tabSampleBtn" hidden>
+      <section id="sample">
+        <p class="kicker">Ejemplo</p>
+        <h2 class="sample-title">La carta de Paul Erdős</h2>
+        <p>
+          Esto es lo que produce el informe, aplicado a un personaje real: el
+          matemático húngaro Paul Erdős. Mismo motor de cálculo, mismas
+          efemérides, mismo formato de lectura.
+        </p>
+
+        <figure class="chart">
+          <div id="sampleChart"></div>
+          <figcaption id="sampleCaption"></figcaption>
+        </figure>
+
+        <ul class="positions" id="samplePositions"></ul>
+        <p class="dasha-line" id="sampleDashas"></p>
+
+        <div class="excerpt">
+          <p class="kicker">Del informe</p>
+          <div id="sampleExcerpt"></div>
+        </div>
+
+        <p class="sample-cta">Tu carta se calcula con el mismo motor y se lee con el mismo cuidado: <a href="#order" id="sampleToOrderBtn">Pedir tu informe (1.99 USD) &rarr;</a></p>
+        <p class="fineprint" id="sampleFineprint"></p>
+      </section>
+    </div>
+
+    <footer>
+      <p><span class="om">ॐ</span>&ensp;Cálculos astronómicos con astronomy-engine &middot; ayanamsa Lahiri &middot; casas por signo completo &middot; zodíaco sidéreo</p>
+      <p>El informe es material de autoconocimiento; no reemplaza consejo médico, legal ni profesional.</p>
+    </footer>
+  </div>
+
+  <!-- Datos de muestra (generados por scripts/build-sample.js) -->
+  <script src="sample-chart.js"></script>
+
+  <!-- Render de la carta de muestra -->
+  <script>
+    (function () {
+      var data = window.SAMPLE_CHART;
+      var section = document.getElementById('sample');
+      if (!data) { section.hidden = true; return; }
+
+      var VS = '\uFE0E'; // fuerza presentación de texto: evita que los glifos salgan como emoji
+      var SIGN_GLYPHS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+      var PLANET_GLYPHS = { Su:'☉', Mo:'☽', Ma:'♂', Me:'☿', Ju:'♃', Ve:'♀', Sa:'♄', Ra:'☊', Ke:'☋' };
+      var ORDER = ['Su','Mo','Ma','Me','Ju','Ve','Sa','Ra','Ke'];
+      var DASHA_ES = { Sun:'Sol', Moon:'Luna', Mars:'Marte', Mercury:'Mercurio', Jupiter:'Júpiter', Venus:'Venus', Saturn:'Saturno', Rahu:'Rahu', Ketu:'Ketu' };
+
+      // ---- Carta estilo sur de la India: signos en casillas fijas ----
+      // signo → [fila, columna] en una grilla de 4×4 (el centro 2×2 lleva el nombre)
+      var CELL = {
+        '11':[0,0], '0':[0,1], '1':[0,2], '2':[0,3],
+        '10':[1,0],               '3':[1,3],
+        '9':[2,0],                '4':[2,3],
+        '8':[3,0],  '7':[3,1], '6':[3,2], '5':[3,3]
+      };
+      var S = 96, W = S * 4, H = S * 4;
+      var ascIdx = data.ascendant.signIndex;
+
+      var bySign = {};
+      ORDER.forEach(function (k) {
+        var s = data.planets[k].signIndex;
+        (bySign[s] = bySign[s] || []).push(k);
+      });
+
+      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Carta natal de ' + data.subject.name + '" xmlns="http://www.w3.org/2000/svg">';
+
+      Object.keys(CELL).forEach(function (sign) {
+        var r = CELL[sign][0], c = CELL[sign][1];
+        var x = c * S, y = r * S;
+        svg += '<rect x="' + (x + 0.5) + '" y="' + (y + 0.5) + '" width="' + (S - 1) + '" height="' + (S - 1) + '" fill="none" stroke="var(--line)"/>';
+        svg += '<text x="' + (x + 8) + '" y="' + (y + 19) + '" font-size="13.5" font-weight="600" fill="var(--cyan)">' + SIGN_GLYPHS[sign] + VS + '</text>';
+
+        // lagna: doble trazo diagonal en la esquina (convención sur-india)
+        if (+sign === ascIdx) {
+          svg += '<line x1="' + (x + S - 15) + '" y1="' + (y + 2) + '" x2="' + (x + S - 2) + '" y2="' + (y + 15) + '" stroke="var(--accent)"/>';
+          svg += '<line x1="' + (x + S - 21) + '" y1="' + (y + 2) + '" x2="' + (x + S - 2) + '" y2="' + (y + 21) + '" stroke="var(--accent)"/>';
+        }
+
+        var plist = bySign[sign] || [];
+        if (plist.length) {
+          var label = plist.join(' ');
+          svg += '<text x="' + (x + S / 2) + '" y="' + (y + S / 2 + 6) + '" text-anchor="middle" font-size="13" font-weight="500" letter-spacing="1" fill="var(--ink)">' + label + '</text>';
+          if (+sign === ascIdx) {
+            svg += '<text x="' + (x + S / 2) + '" y="' + (y + S / 2 + 24) + '" text-anchor="middle" font-size="10.5" font-weight="600" letter-spacing="1.5" fill="var(--accent)">ASC</text>';
+          }
+        } else if (+sign === ascIdx) {
+          svg += '<text x="' + (x + S / 2) + '" y="' + (y + S / 2 + 6) + '" text-anchor="middle" font-size="10.5" font-weight="600" letter-spacing="1.5" fill="var(--accent)">ASC</text>';
+        }
+      });
+
+      // centro 2×2: nombre y datos
+      var cx = W / 2, cy = H / 2;
+      svg += '<text x="' + cx + '" y="' + (cy - 12) + '" text-anchor="middle" font-size="15" font-weight="500" fill="var(--ink)">' + data.subject.name + '</text>';
+      svg += '<text x="' + cx + '" y="' + (cy + 8) + '" text-anchor="middle" font-size="11" fill="var(--cyan-muted)">26 marzo 1913 · 12:00</text>';
+      svg += '<text x="' + cx + '" y="' + (cy + 24) + '" text-anchor="middle" font-size="11" fill="var(--muted)">Budapest</text>';
+      svg += '</svg>';
+
+      document.getElementById('sampleChart').innerHTML = svg;
+      document.getElementById('sampleCaption').textContent =
+        'Carta natal en el formato del sur de la India: signos fijos en celeste, doble trazo óxido en el ascendente. Ayanamsa ' + data.subject.ayanamsa + '.';
+
+      // ---- Lista de posiciones ----
+      var rows = [];
+      var asc = data.ascendant;
+      rows.push('<li><span class="g">Asc</span><span class="pl">Ascendente</span><span class="pos">' +
+        SIGN_GLYPHS[asc.signIndex] + VS + ' ' + asc.sign + ' ' + asc.degreeFormatted + '</span>' +
+        '<span class="details"><span class="nak">' + asc.nakshatra + ' (' + asc.pada + ')</span>' +
+        (asc.navamsha ? '<span class="navamsha">D-9 ' + asc.navamsha + '</span>' : '') + '</span></li>');
+      ORDER.forEach(function (k) {
+        var p = data.planets[k];
+        rows.push('<li><span class="g">' + PLANET_GLYPHS[k] + VS + '</span><span class="pl">' + p.name + '</span>' +
+          '<span class="pos">' + SIGN_GLYPHS[p.signIndex] + VS + ' ' + p.sign + ' ' + p.degreeFormatted + ' · casa ' + p.house + '</span>' +
+          '<span class="details"><span class="nak">' + p.nakshatra + ' (' + p.pada + ')</span>' +
+          (p.navamsha ? '<span class="navamsha">D-9 ' + p.navamsha + '</span>' : '') + '</span></li>');
+      });
+      document.getElementById('samplePositions').innerHTML = rows.join('');
+
+      // ---- Periodos vimshottari (línea compacta) ----
+      document.getElementById('sampleDashas').innerHTML =
+        '<b>Periodos vimshottari:</b> ' +
+        data.dashas.map(function (d) { return (DASHA_ES[d.lord] || d.lord) + ' ' + d.start + '–' + d.end; }).join(' · ') +
+        ' — murió en 1996, bajo Rahu.';
+
+      // ---- Extracto y letra chica ----
+      document.getElementById('sampleExcerpt').innerHTML =
+        data.excerpt.map(function (p) { return '<p class="body-p">' + p + '</p>'; }).join('');
+      document.getElementById('sampleFineprint').textContent = data.fineprint;
+
+      // Normalizar glifos estáticos: forzar presentación de texto (evitar emojis de color)
+      document.querySelectorAll('.glyph').forEach(function (el) {
+        el.textContent = el.textContent.replace(/([\u2600-\u26FF])/g, '$1\uFE0E');
+      });
+    })();
+
+    // ---- Manejo de pestañas ----
+    (function () {
+      var tabOrderBtn = document.getElementById('tabOrderBtn');
+      var tabSampleBtn = document.getElementById('tabSampleBtn');
+      var panelOrder = document.getElementById('panelOrder');
+      var panelSample = document.getElementById('panelSample');
+      var toOrderBtn = document.getElementById('sampleToOrderBtn');
+
+      function switchTab(target) {
+        var isOrder = target === 'order';
+        tabOrderBtn.classList.toggle('active', isOrder);
+        tabOrderBtn.setAttribute('aria-selected', isOrder ? 'true' : 'false');
+        panelOrder.hidden = !isOrder;
+
+        tabSampleBtn.classList.toggle('active', !isOrder);
+        tabSampleBtn.setAttribute('aria-selected', !isOrder ? 'true' : 'false');
+        panelSample.hidden = isOrder;
+
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, '', isOrder ? '#' : '#ejemplo');
+        }
+      }
+
+      tabOrderBtn.addEventListener('click', function () { switchTab('order'); });
+      tabSampleBtn.addEventListener('click', function () { switchTab('sample'); });
+
+      if (toOrderBtn) {
+        toOrderBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          switchTab('order');
+          var inputName = document.getElementById('name');
+          if (inputName) {
+            inputName.focus();
+            inputName.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        });
+      }
+
+      // Hash inicial
+      if (window.location.hash === '#ejemplo' || window.location.hash === '#sample') {
+        switchTab('sample');
+      }
+    })();
+  </script>
+
+  <!-- PayPal SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
+
+  <script>
+    const form = document.getElementById('birthForm');
+    const loading = document.getElementById('loading');
+    const success = document.getElementById('success');
+    const errorEl = document.getElementById('error');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // ---- Geocodificación automática ----
+    (function () {
+      var placeInput = document.getElementById('place');
+      var latInput = document.getElementById('lat');
+      var lonInput = document.getElementById('lon');
+      var tzSelect = document.getElementById('timezone');
+      var geoHelp = document.getElementById('geoHelp');
+
+      var PRESETS = {
+        'santiago': { lat: -33.45, lon: -70.65, tz: -3 },
+        'buenos aires': { lat: -34.60, lon: -58.38, tz: -3 },
+        'córdoba': { lat: -31.42, lon: -64.19, tz: -3 },
+        'cordoba': { lat: -31.42, lon: -64.19, tz: -3 },
+        'mendoza': { lat: -32.89, lon: -68.84, tz: -3 },
+        'montevideo': { lat: -34.90, lon: -56.16, tz: -3 },
+        'lima': { lat: -12.04, lon: -77.04, tz: -5 },
+        'bogotá': { lat: 4.71, lon: -74.07, tz: -5 },
+        'bogota': { lat: 4.71, lon: -74.07, tz: -5 },
+        'medellín': { lat: 6.24, lon: -75.58, tz: -5 },
+        'medellin': { lat: 6.24, lon: -75.58, tz: -5 },
+        'ciudad de méxico': { lat: 19.43, lon: -99.13, tz: -6 },
+        'cdmx': { lat: 19.43, lon: -99.13, tz: -6 },
+        'guadalajara': { lat: 20.67, lon: -103.35, tz: -6 },
+        'monterrey': { lat: 25.68, lon: -100.31, tz: -6 },
+        'madrid': { lat: 40.41, lon: -3.70, tz: 1 },
+        'barcelona': { lat: 41.38, lon: 2.17, tz: 1 },
+        'valencia': { lat: 39.47, lon: -0.38, tz: 1 },
+        'sevilla': { lat: 37.38, lon: -5.98, tz: 1 },
+        'quito': { lat: -0.18, lon: -78.47, tz: -5 },
+        'caracas': { lat: 10.48, lon: -66.90, tz: -4 },
+        'la paz': { lat: -16.50, lon: -68.12, tz: -4 },
+        'asunción': { lat: -25.26, lon: -57.58, tz: -4 },
+        'asuncion': { lat: -25.26, lon: -57.58, tz: -4 },
+        'san josé': { lat: 9.92, lon: -84.09, tz: -6 },
+        'san jose': { lat: 9.92, lon: -84.09, tz: -6 },
+        'miami': { lat: 25.76, lon: -80.19, tz: -5 }
+      };
+
+      var timeout = null;
+
+      function applyCoords(lat, lon, tz, source) {
+        latInput.value = Number(lat).toFixed(2);
+        lonInput.value = Number(lon).toFixed(2);
+        if (tz !== undefined && tz !== null) {
+          var opt = tzSelect.querySelector('option[value="' + tz + '"]');
+          if (opt) tzSelect.value = tz;
+        }
+        if (geoHelp) {
+          geoHelp.textContent = 'Coordenadas encontradas (' + source + '): ' + Number(lat).toFixed(2) + '°, ' + Number(lon).toFixed(2) + '°';
+          geoHelp.style.color = 'var(--cyan)';
+        }
+      }
+
+      function checkPresets(val) {
+        var clean = val.toLowerCase().split(',')[0].trim();
+        for (var k in PRESETS) {
+          if (clean === k || clean.startsWith(k)) {
+            applyCoords(PRESETS[k].lat, PRESETS[k].lon, PRESETS[k].tz, 'ciudad principal');
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function queryOSM(query) {
+        if (!query || query.length < 3) return;
+        if (checkPresets(query)) return;
+
+        if (geoHelp) {
+          geoHelp.textContent = 'Buscando coordenadas…';
+          geoHelp.style.color = 'var(--muted)';
+        }
+
+        fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.length > 0) {
+              applyCoords(data[0].lat, data[0].lon, null, 'búsqueda geográfica');
+            } else if (geoHelp) {
+              geoHelp.textContent = 'No se hallaron automáticamente; puedes escribirlas a mano.';
+              geoHelp.style.color = 'var(--muted)';
+            }
+          })
+          .catch(function () {
+            if (geoHelp) {
+              geoHelp.textContent = 'Puedes ingresar la latitud y longitud manualmente.';
+              geoHelp.style.color = 'var(--muted)';
+            }
+          });
+      }
+
+      placeInput.addEventListener('input', function () {
+        clearTimeout(timeout);
+        var val = placeInput.value.trim();
+        if (checkPresets(val)) return;
+        timeout = setTimeout(function () { queryOSM(val); }, 700);
+      });
+
+      placeInput.addEventListener('change', function () {
+        queryOSM(placeInput.value.trim());
+      });
+    })();
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.hidden = false;
+    }
+
+    function collectBirthData() {
+      return {
+        name: document.getElementById('name').value.trim(),
+        day: parseInt(document.getElementById('day').value, 10),
+        month: parseInt(document.getElementById('month').value, 10),
+        year: parseInt(document.getElementById('year').value, 10),
+        hour: parseInt(document.getElementById('hour').value, 10),
+        minute: parseInt(document.getElementById('minute').value, 10),
+        timezone: parseFloat(document.getElementById('timezone').value),
+        place: document.getElementById('place').value.trim(),
+        lat: parseFloat(document.getElementById('lat').value),
+        lon: parseFloat(document.getElementById('lon').value)
+      };
+    }
+
+    if (typeof paypal === 'undefined') {
+      showError('No se pudo cargar PayPal. Revisa tu conexión y recarga la página.');
+    } else {
+      paypal.Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'black',
+          shape: 'rect',
+          label: 'paypal',
+          height: 45
+        },
+
+        createOrder: function (data, actions) {
+          if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+          }
+          errorEl.hidden = true;
+          return actions.order.create({
+            purchase_units: [{
+              description: 'Informe de astrología védica (jyotish)',
+              amount: { value: '1.99', currency_code: 'USD' }
+            }]
+          });
+        },
+
+        onApprove: function (data, actions) {
+          return actions.order.capture().then(function (details) {
+            errorEl.hidden = true;
+            form.hidden = true;
+            loading.hidden = false;
+
+            fetch('/api/generate-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                birthData: collectBirthData(),
+                paymentId: details.id
+              })
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (!data.success) throw new Error(data.error || 'Error generando el informe');
+                loading.hidden = true;
+                success.hidden = false;
+                downloadBtn.href = data.downloadUrl;
+                document.getElementById('ascResult').textContent =
+                  data.chart.ascendant.sign + ' ' + data.chart.ascendant.degreeFormatted;
+                document.getElementById('sunResult').textContent = data.chart.sunSign;
+                document.getElementById('moonResult').textContent = data.chart.moonSign;
+                document.getElementById('dashaResult').textContent = data.chart.currentDasha;
+              })
+              .catch(function (err) {
+                loading.hidden = true;
+                form.hidden = false;
+                showError(err.message || 'Error en el servidor');
+              });
+          });
+        },
+
+        onError: function (err) {
+          showError('El pago no se completó. Intenta de nuevo.');
+        }
+      }).render('#paypal-button-container');
+    }
+  </script>
+</body>
+</html>
