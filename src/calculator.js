@@ -120,7 +120,8 @@ function getPlanetPositions(year, month, day, hour, minute, lat, lon, timezone) 
 }
 
 function calcRahuLongitude(astroTime) {
-  const T = (astroTime.ut - 2451545.0) / 36525;
+  // astroTime.ut ya son días desde J2000.0 (no un JD absoluto)
+  const T = astroTime.ut / 36525;
   
   let omega = 125.04452 - 1934.136261 * T
     + 0.0020708 * T * T
@@ -133,24 +134,23 @@ function calcRahuLongitude(astroTime) {
 }
 
 function calcAscendant(astroTime, lat, lon) {
-  const gst = Astronomy.SiderealTime(astroTime);
+  // SiderealTime devuelve horas sidéreas de Greenwich: se pasan a grados
+  const gst = Astronomy.SiderealTime(astroTime) * 15;
   const lst = normalize360(gst + lon);
-  
+
   const tilt = Astronomy.e_tilt(astroTime);
   const obl = tilt.tobl; // true obliquity in degrees
-  
+
   const latRad = lat * Math.PI / 180;
   const oblRad = obl * Math.PI / 180;
   const lstRad = lst * Math.PI / 180;
-  
-  const y = -Math.cos(lstRad);
-  const x = Math.sin(oblRad) * Math.tan(latRad) + Math.cos(oblRad) * Math.sin(lstRad);
-  
-  let asc = Math.atan2(y, x) * 180 / Math.PI;
-  
-  if (x < 0) asc += 180;
-  if (asc < 0) asc += 360;
-  
+
+  // Fórmula estándar del ascendente; atan2 resuelve el cuadrante sin correcciones manuales
+  const asc = Math.atan2(
+    Math.cos(lstRad),
+    -(Math.sin(lstRad) * Math.cos(oblRad) + Math.tan(latRad) * Math.sin(oblRad))
+  ) * 180 / Math.PI;
+
   return normalize360(asc);
 }
 
@@ -231,7 +231,8 @@ function calcVimshottariDasha(moonSiderealDeg, birthYear, birthMonth, birthDay) 
   const remainingYears = totalYears * (1 - progress);
   
   const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
-  const dashaStartDate = new Date(birthDate.getTime() + progress * totalYears * 365.25 * 24 * 3600 * 1000);
+  // Fin del primer dasha: lo que le queda por recorrer a la Luna en su nakshatra
+  const dashaStartDate = new Date(birthDate.getTime() + remainingYears * 365.25 * 24 * 3600 * 1000);
   
   const dashas = [];
   let currentIndex = DASHA_ORDER.indexOf(dashaLord);
