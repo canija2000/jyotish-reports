@@ -105,6 +105,14 @@ function getPlanetPositions(year, month, day, hour, minute, lat, lon, timezone) 
     positions[key] = { tropical: lon, sidereal: normalize360(lon - ayanamsa) };
   }
   
+  // Retrogradación: longitud 12 h antes y después; si disminuye, el planeta va hacia atrás
+  const shift = (h) => new Astronomy.AstroTime(new Date(utcDate.getTime() + h * 3600000));
+  const before = shift(-12), after = shift(12);
+  for (const [key, body] of planets) {
+    const delta = ((getEclipticLongitude(after, body) - getEclipticLongitude(before, body) + 540) % 360) - 180;
+    positions[key].retrograde = delta < 0;
+  }
+
   // Nodo Norte (Rahu)
   const rahuLon = calcRahuLongitude(astroTime);
   positions.Ra = { tropical: rahuLon, sidereal: normalize360(rahuLon - ayanamsa) };
@@ -218,7 +226,79 @@ function calcNavamsha(siderealDeg) {
   return navamshaSign;
 }
 
+// ========== DIGNIDADES Y REGENCIAS (Parāśara) ==========
+
+// Regente de cada signo, de Aries a Piscis
+const SIGN_LORDS = ['Ma', 'Ve', 'Me', 'Mo', 'Su', 'Me', 'Ve', 'Ma', 'Ju', 'Sa', 'Sa', 'Ju'];
+const DASHA_TO_KEY = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke' };
+
+const EXALTATION = { Su: 0, Mo: 1, Ma: 9, Me: 5, Ju: 3, Ve: 11, Sa: 6 };
+// Mūlatrikoṇa: [signo, grado inicial, grado final]
+const MOOLATRIKONA = { Su: [4, 0, 20], Mo: [1, 3, 30], Ma: [0, 0, 12], Me: [5, 15, 20], Ju: [8, 0, 10], Ve: [6, 0, 15], Sa: [10, 0, 20] };
+// Amistades naturales (naisargika): amigos y enemigos; el resto es neutral
+const FRIENDS = { Su: ['Mo', 'Ma', 'Ju'], Mo: ['Su', 'Me'], Ma: ['Su', 'Mo', 'Ju'], Me: ['Su', 'Ve'], Ju: ['Su', 'Mo', 'Ma'], Ve: ['Me', 'Sa'], Sa: ['Me', 'Ve'] };
+const ENEMIES = { Su: ['Ve', 'Sa'], Mo: [], Ma: ['Me'], Me: ['Mo'], Ju: ['Me', 'Ve'], Ve: ['Su', 'Mo'], Sa: ['Su', 'Mo', 'Ma'] };
+
+/**
+ * Dignidad de un graha por signo: exalted, moolatrikona, own, friend, neutral, enemy, debilitated.
+ * Rahu y Ketu no tienen dignidad clásica consensuada: devuelve null.
+ */
+function calcDignity(key, signIdx, degInS) {
+  if (!(key in EXALTATION)) return null;
+  const mt = MOOLATRIKONA[key];
+  if (signIdx === EXALTATION[key]) {
+    // La Luna y Mercurio comparten signo de exaltación con su mūlatrikoṇa / signo propio
+    if (key === 'Mo' && degInS >= 3) return 'moolatrikona';
+    if (key === 'Me' && degInS >= 15) return degInS < 20 ? 'moolatrikona' : 'own';
+    return 'exalted';
+  }
+  if (signIdx === (EXALTATION[key] + 6) % 12) return 'debilitated';
+  if (signIdx === mt[0] && degInS >= mt[1] && degInS < mt[2]) return 'moolatrikona';
+  const lord = SIGN_LORDS[signIdx];
+  if (lord === key) return 'own';
+  if (FRIENDS[key].includes(lord)) return 'friend';
+  if (ENEMIES[key].includes(lord)) return 'enemy';
+  return 'neutral';
+}
+
+// Las 12 casas: signo, regente, dónde está el regente y qué planetas la ocupan
+function calcHouseTable(ascSign, planets) {
+  return Array.from({ length: 12 }, (_, i) => {
+    const signIndex = (ascSign + i) % 12;
+    const lord = SIGN_LORDS[signIndex];
+    return {
+      house: i + 1,
+      sign: SIGNS[signIndex],
+      signIndex,
+      lord,
+      lordHouse: planets[lord].house,
+      occupants: Object.keys(planets).filter(k => k !== 'Asc' && planets[k].signIndex === signIndex)
+    };
+  });
+}
+
 // ========== VIMSHOTTARI DASHA ==========
+
+const YEAR_MS = 365.25 * 24 * 3600 * 1000;
+
+// Antardashas de un mahadasha: empiezan por el propio regente y siguen el orden Vimshottari.
+// fullStart es el inicio teórico del mahadasha completo; se recortan los subperiodos previos al nacimiento.
+function calcAntardashas(md, fullStart) {
+  const startIdx = DASHA_ORDER.indexOf(md.lord);
+  const total = DASHA_YEARS[md.lord];
+  const list = [];
+  let t = fullStart.getTime();
+  for (let i = 0; i < 9; i++) {
+    const lord = DASHA_ORDER[(startIdx + i) % 9];
+    const years = total * DASHA_YEARS[lord] / 120;
+    const end = t + years * YEAR_MS;
+    if (end > md.start.getTime()) {
+      list.push({ lord, start: new Date(Math.max(t, md.start.getTime())), end: new Date(end), years });
+    }
+    t = end;
+  }
+  return list;
+}
 
 function calcVimshottariDasha(moonSiderealDeg, birthYear, birthMonth, birthDay) {
   const nak = degToNakshatra(moonSiderealDeg);
@@ -262,7 +342,12 @@ function calcVimshottariDasha(moonSiderealDeg, birthYear, birthMonth, birthDay) 
     
     currentDate = endDate;
   }
-  
+
+  dashas.forEach((d, i) => {
+    const fullStart = i === 0 ? new Date(d.end.getTime() - DASHA_YEARS[d.lord] * YEAR_MS) : d.start;
+    d.antardashas = calcAntardashas(d, fullStart);
+  });
+
   return dashas;
 }
 
@@ -297,15 +382,28 @@ function calculateChart(birthData) {
       pada,
       navamsha: SIGNS[navamshaSign],
       navamshaIndex: navamshaSign,
-      retrograde: false
+      // Rahu y Ketu (nodo medio) siempre retrogradan
+      retrograde: key === 'Ra' || key === 'Ke' ? true : !!data.retrograde,
+      dignity: calcDignity(key, signIdx, degInS),
+      rules: []
     };
   }
-  
+
+  // Casas que rige cada graha (contadas desde el ascendente)
+  const ascSign = planets.Asc.signIndex;
+  for (let h = 1; h <= 12; h++) {
+    planets[SIGN_LORDS[(ascSign + h - 1) % 12]].rules.push(h);
+  }
+  const houseTable = calcHouseTable(ascSign, planets);
+
   const moonSidereal = positions.Mo.sidereal;
   const dashas = calcVimshottariDasha(moonSidereal, year, month, day);
-  
+
   const now = new Date();
-  const currentDasha = dashas.find(d => d.start <= now && d.end > now) || dashas[0];
+  const currentDasha = dashas.find(d => d.start <= now && d.end > now)
+    || (now < dashas[0].start ? dashas[0] : dashas[dashas.length - 1]);
+  const currentAntardasha = currentDasha.antardashas.find(a => a.start <= now && a.end > now) || null;
+  const nextDasha = dashas[dashas.indexOf(currentDasha) + 1] || null;
   
   const elements = { fire: 0, earth: 0, air: 0, water: 0 };
   const elementMap = ['fire', 'fire', 'fire', 'water', 'fire', 'earth', 'air', 'water', 'fire', 'earth', 'air', 'water'];
@@ -322,6 +420,7 @@ function calculateChart(birthData) {
   return {
     subject: {
       name: name || 'Consultante',
+      birth: { year, month, day, hour, minute, lat, lon },
       birthDate: `${day} de ${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][month-1]} de ${year}`,
       birthTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
       place: birthData.place || '',
@@ -340,12 +439,15 @@ function calculateChart(birthData) {
     },
     planets,
     houses,
+    houseTable,
     dashas,
     currentDasha,
+    currentAntardasha,
+    nextDasha,
     elements,
     modalities,
     calculatedAt: new Date().toISOString()
   };
 }
 
-module.exports = { calculateChart, SIGNS, SIGNS_SAN, NAKSHATRAS, PLANET_NAMES };
+module.exports = { calculateChart, SIGNS, SIGNS_SAN, NAKSHATRAS, PLANET_NAMES, SIGN_LORDS, DASHA_TO_KEY };
