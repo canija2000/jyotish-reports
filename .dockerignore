@@ -6,3 +6,4 @@ reports/*.pdf
 .env.*
 *.log
 .DS_Store
+data

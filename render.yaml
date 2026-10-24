@@ -13,5 +13,7 @@ services:
         value: production
       - key: PAYPAL_CLIENT_ID
         sync: false
+      - key: PAYPAL_SECRET
+        sync: false
       - key: PAYPAL_ENV
         value: production

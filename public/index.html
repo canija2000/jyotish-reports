@@ -682,8 +682,7 @@
     })();
   </script>
 
-  <!-- PayPal SDK (Producción) -->
-  <script src="https://www.paypal.com/sdk/js?client-id=ARfMqKhsJoE7fEtIYUrqKfLbk1l7VAotipBsQT2mIlKnbzA9Gx3jBk-1p5DqW_cGc4l_asguzTHagJtk&currency=USD"></script>
+  <!-- El SDK de PayPal se carga más abajo con el client id que entrega /api/config -->
 
   <script>
     const form = document.getElementById('birthForm');
@@ -816,71 +815,108 @@
       };
     }
 
-    if (typeof paypal === 'undefined') {
-      showError('No se pudo cargar PayPal. Revisa tu conexión y recarga la página.');
-    } else {
-      paypal.Buttons({
-        style: {
-          layout: 'vertical',
-          color: 'black',
-          shape: 'rect',
-          label: 'paypal',
-          height: 45
-        },
+    // ---- Pago ----
+    // El servidor crea la orden (precio fijo), la captura y genera el informe.
+    var currentOrderId = null;
 
-        createOrder: function (data, actions) {
-          if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
+    function postJSON(url, body) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (data) {
+          if (!r.ok) {
+            var err = new Error(data.error || 'Error en el servidor');
+            err.retry = !!data.retry;
+            throw err;
           }
-          errorEl.hidden = true;
-          return actions.order.create({
-            purchase_units: [{
-              description: 'Informe de astrología védica (jyotish)',
-              amount: { value: '1.99', currency_code: 'USD' }
-            }]
-          });
-        },
-
-        onApprove: function (data, actions) {
-          return actions.order.capture().then(function (details) {
-            errorEl.hidden = true;
-            form.hidden = true;
-            loading.hidden = false;
-
-            fetch('/api/generate-report', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                birthData: collectBirthData(),
-                paymentId: details.id
-              })
-            })
-              .then(function (r) { return r.json(); })
-              .then(function (data) {
-                if (!data.success) throw new Error(data.error || 'Error generando el informe');
-                loading.hidden = true;
-                success.hidden = false;
-                downloadBtn.href = data.downloadUrl;
-                document.getElementById('ascResult').textContent =
-                  data.chart.ascendant.sign + ' ' + data.chart.ascendant.degreeFormatted;
-                document.getElementById('sunResult').textContent = data.chart.sunSign;
-                document.getElementById('moonResult').textContent = data.chart.moonSign;
-                document.getElementById('dashaResult').textContent = data.chart.currentDasha;
-              })
-              .catch(function (err) {
-                loading.hidden = true;
-                form.hidden = false;
-                showError(err.message || 'Error en el servidor');
-              });
-          });
-        },
-
-        onError: function (err) {
-          showError('El pago no se completó. Intenta de nuevo.');
-        }
-      }).render('#paypal-button-container');
+          return data;
+        });
+      });
     }
+
+    function createOrder() {
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return Promise.reject(new Error('Completa el formulario'));
+      }
+      errorEl.hidden = true;
+      return postJSON('/api/orders', { birthData: collectBirthData() })
+        .then(function (data) { return data.id; })
+        .catch(function (err) { showError(err.message); throw err; });
+    }
+
+    function deliver(orderId) {
+      currentOrderId = orderId;
+      errorEl.hidden = true;
+      retryBtn.hidden = true;
+      form.hidden = true;
+      loading.hidden = false;
+      return postJSON('/api/generate-report', { birthData: collectBirthData(), orderId: orderId })
+        .then(function (data) {
+          loading.hidden = true;
+          success.hidden = false;
+          downloadBtn.href = data.downloadUrl;
+          downloadBtn.setAttribute('download', data.downloadName || 'informe_jyotish.pdf');
+          document.getElementById('ascResult').textContent =
+            data.chart.ascendant.sign + ' ' + data.chart.ascendant.degreeFormatted;
+          document.getElementById('sunResult').textContent = data.chart.sunSign;
+          document.getElementById('moonResult').textContent = data.chart.moonSign;
+          document.getElementById('dashaResult').textContent = data.chart.currentDasha;
+        })
+        .catch(function (err) {
+          loading.hidden = true;
+          form.hidden = false;
+          showError(err.message || 'Error en el servidor');
+          // Pago cobrado pero informe sin generar: se reintenta con la misma orden, sin volver a pagar
+          retryBtn.hidden = !err.retry;
+        });
+    }
+
+    var retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'btn';
+    retryBtn.textContent = 'Reintentar sin volver a pagar';
+    retryBtn.hidden = true;
+    retryBtn.addEventListener('click', function () { if (currentOrderId) deliver(currentOrderId); });
+    errorEl.insertAdjacentElement('afterend', retryBtn);
+
+    function renderTestButton(price) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn';
+      btn.textContent = 'Pagar ' + price.value + ' ' + price.currency + ' (modo prueba, sin cobro)';
+      btn.addEventListener('click', function () {
+        createOrder().then(deliver).catch(function () {});
+      });
+      document.getElementById('paypal-button-container').appendChild(btn);
+    }
+
+    function renderPayPal(clientId, price) {
+      var script = document.createElement('script');
+      script.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(clientId) +
+        '&currency=' + encodeURIComponent(price.currency) + '&intent=capture';
+      script.onerror = function () { showError('No se pudo cargar PayPal. Revisa tu conexión y recarga la página.'); };
+      script.onload = function () {
+        paypal.Buttons({
+          style: { layout: 'vertical', color: 'black', shape: 'rect', label: 'paypal', height: 45 },
+          createOrder: function () { return createOrder(); },
+          onApprove: function (data) { return deliver(data.orderID); },
+          onCancel: function () { showError('Pago cancelado. Puedes intentarlo de nuevo cuando quieras.'); },
+          onError: function () { showError('El pago no se completó. Intenta de nuevo.'); }
+        }).render('#paypal-button-container');
+      };
+      document.body.appendChild(script);
+    }
+
+    fetch('/api/config')
+      .then(function (r) { return r.json(); })
+      .then(function (cfg) {
+        if (cfg.testMode) renderTestButton(cfg.price);
+        else renderPayPal(cfg.paypalClientId, cfg.price);
+      })
+      .catch(function () { showError('No se pudo iniciar el pago. Recarga la página.'); });
   </script>
 </body>
 </html>
