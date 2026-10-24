@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: jyotish-reports
+    env: docker
+    plan: free
+    region: ohio
+    branch: main
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_ENV
+        value: production

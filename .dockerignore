@@ -1,0 +1,8 @@
+node_modules
+reports/*.pdf
+!public/muestra_erdos.pdf
+.git
+.env
+.env.*
+*.log
+.DS_Store
