@@ -53,6 +53,14 @@
     .site .mark { color: var(--ink); font-size: 19px; letter-spacing: .02em; }
     .site .mark .om { color: var(--accent); margin-right: 9px; }
     .site .tag { color: var(--muted); font-style: italic; font-size: 14px; }
+    .lang-toggle { font-size: 13px; margin-left: auto; }
+    .lang-btn {
+      background: none; border: none; font: inherit; font-size: 13px;
+      color: var(--muted); cursor: pointer; padding: 2px 4px;
+    }
+    .lang-btn.active { color: var(--accent); font-weight: 600; }
+    .lang-btn:hover { color: var(--ink); }
+    .lang-toggle .sep { margin: 0 2px; color: var(--faint); }
 
     /* apertura */
     h1 {
@@ -193,6 +201,11 @@
     <header class="site">
       <div class="mark"><span class="om">ॐ</span>jyotish</div>
       <div class="tag">informes de astrología védica</div>
+      <div class="lang-toggle">
+        <button type="button" class="lang-btn active" id="btnLangEs">ES</button>
+        <span class="sep">/</span>
+        <button type="button" class="lang-btn" id="btnLangEn">EN</button>
+      </div>
     </header>
 
     <section>
@@ -324,6 +337,14 @@
           </div>
           <p class="help" id="geoHelp">Se completan automáticamente al elegir o escribir tu ciudad, o puedes ajustarlas a mano.</p>
 
+          <div class="field" style="margin-top: 20px; margin-bottom: 20px;">
+            <label for="reportLang" id="labelReportLang">Idioma del informe</label>
+            <select id="reportLang" name="lang">
+              <option value="es" selected>Español</option>
+              <option value="en">English (Vedic Report)</option>
+            </select>
+          </div>
+
           <div class="pay">
             <p class="price"><span class="cur">1.99 USD</span> &middot; pago único</p>
             <p class="note">
@@ -399,8 +420,9 @@
           <div id="sampleExcerpt"></div>
         </div>
 
-        <div style="margin: 28px 0 24px;">
-          <a class="btn" href="/muestra_erdos.pdf" target="_blank" download="informe_jyotish_erdos.pdf">Descargar informe de muestra completo (PDF)</a>
+        <div style="margin: 28px 0 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <a class="btn" href="/muestra_erdos.pdf" target="_blank" download="informe_jyotish_erdos_es.pdf">Descargar muestra (Español PDF)</a>
+          <a class="btn" style="background: transparent; color: var(--ink); border: 1px solid var(--line);" href="/sample_erdos_en.pdf" target="_blank" download="jyotish_report_erdos_en.pdf">Download Sample (English PDF)</a>
         </div>
 
         <p class="sample-cta">Tu carta se calcula con el mismo motor y se lee con el mismo cuidado: <a href="#order" id="sampleToOrderBtn">Pedir tu informe (1.99 USD) &rarr;</a></p>
@@ -560,6 +582,104 @@
         switchTab('sample');
       }
     })();
+
+    // ---- Conmutador de idioma de la página (ES / EN) ----
+    (function () {
+      var btnEs = document.getElementById('btnLangEs');
+      var btnEn = document.getElementById('btnLangEn');
+      var reportLangSelect = document.getElementById('reportLang');
+
+      var TEXTS = {
+        es: {
+          siteTag: 'informes de astrología védica',
+          h1: 'Tu carta natal védica, en un informe.',
+          lede: 'Un PDF de unas ocho páginas, calculado con la posición real de los planetas en tu fecha, hora y lugar de nacimiento, e interpretado según la tradición india del jyotish.',
+          deal: '<strong>1.99 USD</strong> · pago único · entrega inmediata',
+          tabOrder: 'Pedir tu informe',
+          tabSample: 'Ejemplo <span class="tab-badge">Paul Erdős</span>',
+          kickerData: 'Tus datos',
+          labelName: 'Nombre',
+          namePlaceholder: 'Como quieres que figure en el informe',
+          labelDay: 'Día',
+          labelMonth: 'Mes',
+          labelYear: 'Año',
+          labelHour: 'Hora',
+          labelMinute: 'Minuto',
+          labelTz: 'Zona horaria',
+          helpTime: 'Si no conoces la hora exacta, un aproximado sirve: el ascendente es lo más sensible al error.',
+          labelPlace: 'Lugar de nacimiento',
+          placePlaceholder: 'Santiago, Chile (o tu ciudad)',
+          labelLat: 'Latitud',
+          labelLon: 'Longitud',
+          labelReportLang: 'Idioma del informe',
+          priceText: '<span class="cur">1.99 USD</span> · pago único',
+          payNote: 'El pago se procesa con PayPal. Al confirmarlo, tu informe se genera y se descarga al instante.',
+          kickerIncludes: 'Qué incluye',
+          kickerMethod: 'Método'
+        },
+        en: {
+          siteTag: 'vedic astrology reports',
+          h1: 'Your Vedic birth chart, in an in-depth report.',
+          lede: 'An eight-page editorial PDF, calculated using actual astronomical positions at your exact birth date, time, and location, interpreted according to the ancient Indian Jyotish tradition.',
+          deal: '<strong>1.99 USD</strong> · one-time · instant delivery',
+          tabOrder: 'Order Your Report',
+          tabSample: 'Sample <span class="tab-badge">Paul Erdős</span>',
+          kickerData: 'Your Birth Details',
+          labelName: 'Full Name',
+          namePlaceholder: 'As you want it printed on the report',
+          labelDay: 'Day',
+          labelMonth: 'Month',
+          labelYear: 'Year',
+          labelHour: 'Hour (0–23)',
+          labelMinute: 'Minute',
+          labelTz: 'Timezone',
+          helpTime: 'If you do not know the exact minute, an estimate works; the rising sign is the most sensitive.',
+          labelPlace: 'Birthplace',
+          placePlaceholder: 'City, Country (e.g. New York, London, Madrid)',
+          labelLat: 'Latitude',
+          labelLon: 'Longitude',
+          labelReportLang: 'Report language',
+          priceText: '<span class="cur">1.99 USD</span> · one-time payment',
+          payNote: 'Payment is securely processed via PayPal. Once approved, your report generates and downloads immediately.',
+          kickerIncludes: 'What is included',
+          kickerMethod: 'Methodology'
+        }
+      };
+
+      function setPageLang(lang) {
+        var t = TEXTS[lang];
+        if (!t) return;
+        btnEs.classList.toggle('active', lang === 'es');
+        btnEn.classList.toggle('active', lang === 'en');
+        if (reportLangSelect) reportLangSelect.value = lang;
+
+        document.querySelector('.site .tag').textContent = t.siteTag;
+        document.querySelector('h1').textContent = t.h1;
+        document.querySelector('.lede').textContent = t.lede;
+        document.querySelector('.deal').innerHTML = t.deal;
+        document.getElementById('tabOrderBtn').innerHTML = t.tabOrder;
+        document.getElementById('tabSampleBtn').innerHTML = t.tabSample;
+        document.querySelector('#order .kicker').textContent = t.kickerData;
+        document.querySelector('label[for="name"]').textContent = t.labelName;
+        document.getElementById('name').placeholder = t.namePlaceholder;
+        document.querySelector('label[for="day"]').textContent = t.labelDay;
+        document.querySelector('label[for="month"]').textContent = t.labelMonth;
+        document.querySelector('label[for="year"]').textContent = t.labelYear;
+        document.querySelector('label[for="hour"]').textContent = t.labelHour;
+        document.querySelector('label[for="minute"]').textContent = t.labelMinute;
+        document.querySelector('label[for="timezone"]').textContent = t.labelTz;
+        document.querySelector('label[for="place"]').textContent = t.labelPlace;
+        document.getElementById('place').placeholder = t.placePlaceholder;
+        document.querySelector('label[for="lat"]').textContent = t.labelLat;
+        document.querySelector('label[for="lon"]').textContent = t.labelLon;
+        document.getElementById('labelReportLang').textContent = t.labelReportLang;
+        document.querySelector('.price').innerHTML = t.priceText;
+        document.querySelector('.pay .note').textContent = t.payNote;
+      }
+
+      btnEs.addEventListener('click', function () { setPageLang('es'); });
+      btnEn.addEventListener('click', function () { setPageLang('en'); });
+    })();
   </script>
 
   <!-- PayPal SDK (Producción) -->
@@ -683,6 +803,7 @@
     function collectBirthData() {
       return {
         name: document.getElementById('name').value.trim(),
+        lang: document.getElementById('reportLang').value,
         day: parseInt(document.getElementById('day').value, 10),
         month: parseInt(document.getElementById('month').value, 10),
         year: parseInt(document.getElementById('year').value, 10),

@@ -85,23 +85,32 @@ El usuario rechazó explícitamente el estilo v1 ("parece demasiado AI-coded, de
 - Sin gradientes, sin backdrop-filter, sin emojis como iconos, sin centrado generalizado
 
 **PDF (pdf.js):**
-- Variables: mismo sistema pero `--paper: #ffffff` (blanco para impresión)
+- Variables: `--paper: #ffffff`, `--ink: #0d1b2a`, `--body: #1f3044`, `--muted: #415a77`, `--line: #d8e2ed`, `--accent: #96382a`, `--cyan: #148096`
 - Tipografía: `EB Garamond` (Google Fonts import en el HTML del PDF)
+- Diagrama SVG: carta natal integrada en el formato del sur de la India (grilla 4×4 con signos fijos, lagna y abreviaturas planetarias).
+- Tablas tipográficas: en lugar de listas de viñetas, incluye tabla completa de **Posiciones Planetarias** (Glifo, Planeta, Signo, Grado, Casa, Nakshatra y Navamsha D-9) y tabla de **Periodos Vimshottari Dasha** con estado y periodo actual resaltado.
 - Portada: kicker uppercase en acento, h1 nombre, dl meta con hairlines, epigraph con borde lateral
-- Secciones: h2 con filete inferior, h3 sub-encabezados, listas con guion largo (—)
 - Colofón: método + fecha + disclaimer
+- Bilingüe: genera el documento en español o en inglés según el parámetro `lang`.
 - Sin emojis, sin púrpura, sin gradientes
 
-## Preview de muestra
+## Preview de muestra y Bilingüismo (ES / EN)
+
+La plataforma soporta **español e inglés** tanto en la web como en los informes:
+- Switch en la cabecera (`ES / EN`) que traduce los textos de la página al inglés.
+- Selector en el formulario para elegir el idioma del informe (`Español` o `English`).
+- Descargas de muestra disponibles en ambos idiomas:
+  - `public/muestra_erdos.pdf` (Español)
+  - `public/sample_erdos_en.pdf` (English)
 
 Para que el informe de ejemplo no entierre el formulario de compra ni perjudique la conversión, la landing organiza el contenido en **dos pestañas sobrias**:
-- **"Pedir tu informe" (activa por defecto):** muestra el formulario de datos (`#birthForm`), el botón de PayPal a $1.99 USD, y a continuación las secciones "Qué incluye" y "Método". El input de compra queda visible de inmediato (a ~600px del tope).
+- **"Pedir tu informe / Order Your Report" (activa por defecto):** muestra el formulario de datos (`#birthForm`), el botón de PayPal a $1.99 USD, y a continuación las secciones "Qué incluye" y "Método". El input de compra queda visible de inmediato (a ~600px del tope).
 - **"Ejemplo · Paul Erdős":** muestra la carta de muestra del matemático húngaro (26 mar 1913, Budapest), con:
   - **Diagrama de carta estilo sur de la India:** grilla 4×4 con signos fijos, glifos zodiacales en celeste/cyan (`--cyan`), abreviaturas de planetas, y doble trazo diagonal en acento para marcar el ascendente (Lagna).
   - **Listado de posiciones:** glifos planetarios, signo, grado, casa, nakshatra y Navamsha (D-9) destacado en celeste/cyan con alta visibilidad.
   - **Extracto del informe:** 3 párrafos conectando la carta con su vida (colaboración, ausencia de tierra, nakshatra Anuradha).
   - **Línea de periodos Vimshottari** con la secuencia completa.
-  - **CTA al final:** enlace para volver a la pestaña de pedido y enfocar el formulario.
+  - **CTA al final:** enlaces de descarga directa de muestra en PDF (Español e Inglés) y enlace para volver al formulario de compra.
   - **Letra chica:** declara el uso de mediodía local (UTC+1) y la transición lunar de madrugada.
 
 Soporta enlaces directos vía hash (`#ejemplo` abre la pestaña de muestra directamente).

@@ -96,15 +96,16 @@ app.post('/api/generate-report', async (req, res) => {
     
     // Calcular carta
     const chart = calculateChart(birthData);
+    const lang = (birthData.lang === 'en') ? 'en' : 'es';
     
     // Generar reporte
-    const report = generateReport(chart);
+    const report = generateReport(chart, lang);
     
     // Generar PDF
-    const filename = `reporte_${Date.now()}_${birthData.name.replace(/\s+/g, '_')}.pdf`;
+    const filename = `reporte_${Date.now()}_${birthData.name.replace(/\s+/g, '_')}_${lang}.pdf`;
     const outputPath = path.join(reportsDir, filename);
     
-    await generatePDF(report, chart, outputPath);
+    await generatePDF(report, chart, outputPath, lang);
     
     // Enviar URL de descarga
     res.json({
@@ -132,7 +133,8 @@ app.post('/api/preview', async (req, res) => {
   try {
     const { birthData } = req.body;
     const chart = calculateChart(birthData);
-    const report = generateReport(chart);
+    const lang = (birthData.lang === 'en') ? 'en' : 'es';
+    const report = generateReport(chart, lang);
     const previewText = report.cover.intro.join(' ') + ' ' +
       report.sections.map(s => s.title + '. ' + s.body).join(' ');
     
